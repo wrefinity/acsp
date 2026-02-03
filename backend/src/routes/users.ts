@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
-import User from '../models/User';
+import User, { UserStatus } from '../models/User';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 import { body, validationResult } from 'express-validator';
 import multer from 'multer';
@@ -26,7 +26,7 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
+    fileSize: 5 * 1024 * 1024
   },
   fileFilter: (req, file, cb) => {
     // Accept images only
@@ -90,7 +90,7 @@ router.put('/profile', authenticateToken, [
     if (user.status === 'unverified_profile' &&
         user.profile?.photo &&
         user.profile?.idCard) {
-      user.status = 'pending_verification';
+      user.status = UserStatus.PENDING_VERIFICATION;
     }
 
     await user.save();
@@ -132,7 +132,7 @@ router.put('/profile/upload', authenticateToken, upload.fields([
     if (user.status === 'unverified_profile' &&
         user.profile?.photo &&
         user.profile?.idCard) {
-      user.status = 'pending_verification';
+      user.status = UserStatus.PENDING_VERIFICATION;;
     }
 
     await user.save();
@@ -202,9 +202,9 @@ router.patch('/:id/verify', authenticateToken, requireAdmin, async (req: Request
     }
 
     if (action === 'approve') {
-      user.status = 'verified';
+      user.status = UserStatus.VERIFIED;
     } else if (action === 'reject') {
-      user.status = 'rejected';
+      user.status = UserStatus.REJECTED;
       user.rejectionReason = reason;
     } else {
       return res.status(400).json({ message: 'Invalid action. Use "approve" or "reject"' });

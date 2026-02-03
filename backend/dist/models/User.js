@@ -33,7 +33,25 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.UserStatus = exports.UserRole = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
+var UserRole;
+(function (UserRole) {
+    UserRole["ADMIN"] = "admin";
+    UserRole["MEMBER"] = "member";
+    UserRole["MODERATOR"] = "moderator";
+    UserRole["GUEST"] = "guest";
+})(UserRole || (exports.UserRole = UserRole = {}));
+var UserStatus;
+(function (UserStatus) {
+    UserStatus["PENDING"] = "pending";
+    UserStatus["UNVERIFIED_PROFILE"] = "unverified_profile";
+    UserStatus["PENDING_VERIFICATION"] = "pending_verification";
+    UserStatus["VERIFIED"] = "verified";
+    UserStatus["REJECTED"] = "rejected";
+    UserStatus["SUSPENDED"] = "suspended";
+    UserStatus["DEACTIVATED"] = "deactivated";
+})(UserStatus || (exports.UserStatus = UserStatus = {}));
 const UserSchema = new mongoose_1.Schema({
     name: {
         type: String,
