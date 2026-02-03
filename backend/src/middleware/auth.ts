@@ -18,10 +18,10 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
 
     // Verify token
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
-    
+
     // Get user from database
     const user = await User.findById(decoded.user.id).select('-password');
-    
+
     if (!user) {
       return res.status(401).json({ message: 'Token is not valid.' });
     }
@@ -33,6 +33,7 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     console.error('Authentication error:', error);
     res.status(401).json({ message: 'Token is not valid.' });
   }
+  return;
 };
 
 // Middleware to check if user is admin
@@ -46,6 +47,7 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
   }
 
   next();
+  return;
 };
 
 // Middleware to check if user is verified member
@@ -59,11 +61,5 @@ export const requireVerifiedMember = (req: AuthRequest, res: Response, next: Nex
   }
 
   next();
-};
-
-// Export all middleware functions
-export {
-  authenticateToken,
-  requireAdmin,
-  requireVerifiedMember
+  return;
 };

@@ -55,7 +55,7 @@ router.post('/register', [
 
     // Send verification email
     try {
-      const transporter = nodemailer.createTransporter({
+      const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
           user: process.env.EMAIL_USER,
@@ -89,9 +89,7 @@ router.post('/register', [
       };
 
       await transporter.sendMail(mailOptions);
-      console.log(`Verification email sent to ${email}`);
     } catch (emailError) {
-      console.error('Error sending verification email:', emailError);
       // Still return success even if email fails, but log the error
     }
 
@@ -100,9 +98,9 @@ router.post('/register', [
       userId: user._id
     });
   } catch (error) {
-    console.error('Registration error:', error);
     res.status(500).json({ message: 'Server error during registration' });
   }
+  return res;
 });
 
 // Verify email with token
@@ -123,9 +121,9 @@ router.get('/verify/:token', async (req: Request, res: Response) => {
 
     res.status(200).json({ message: 'Email verified successfully. Please complete your profile.' });
   } catch (error) {
-    console.error('Verification error:', error);
     res.status(500).json({ message: 'Server error during verification' });
   }
+  return res;
 });
 
 // Login user
@@ -184,9 +182,9 @@ router.post('/login', [
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
   }
+  return res;
 });
 
 // Get current user profile
@@ -201,9 +199,9 @@ router.get('/profile', authenticateToken, async (req: AuthRequest, res: Response
 
     res.json(user);
   } catch (error) {
-    console.error('Profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+  return res;
 });
 
 export default router;

@@ -9,6 +9,7 @@ import Announcement from '../models/Announcement';
 import Event from '../models/Event';
 import Blog from '../models/Blog';
 import GalleryImage from '../models/GalleryImage';
+import Executive from '../models/Executive';
 
 const router = express.Router();
 
@@ -47,7 +48,7 @@ router.post('/carousel', authenticateToken, requireAdmin, upload.single('image')
                     reject(error);
                 }
             });
-            stream.end(req.file.buffer);
+            stream.end(req.file!.buffer);
         });
 
         const newSlide = new CarouselSlide({
@@ -56,10 +57,11 @@ router.post('/carousel', authenticateToken, requireAdmin, upload.single('image')
         });
         await newSlide.save();
         res.status(201).json(newSlide);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Create carousel slide error:', error);
         res.status(500).json({ message: error.message || 'Server error' });
     }
+    return res;
 });
 
 router.delete('/carousel/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
@@ -73,6 +75,7 @@ router.delete('/carousel/:id', authenticateToken, requireAdmin, async (req: Requ
         console.error('Delete carousel slide error:', error);
         res.status(500).json({ message: 'Server error' });
     }
+    return res;
 });
 
 
@@ -105,6 +108,7 @@ router.post('/announcements', authenticateToken, requireAdmin, [
         console.error('Create announcement error:', error);
         res.status(500).json({ message: 'Server error' });
     }
+    return res;
 });
 
 router.delete('/announcements/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
@@ -118,6 +122,7 @@ router.delete('/announcements/:id', authenticateToken, requireAdmin, async (req:
         console.error('Delete announcement error:', error);
         res.status(500).json({ message: 'Server error' });
     }
+    return res;
 });
 
 // Event Routes
@@ -153,7 +158,7 @@ router.post('/events', authenticateToken, requireAdmin, upload.single('image'), 
                     reject(error);
                 }
             });
-            stream.end(req.file.buffer);
+            stream.end(req.file!.buffer);
         });
 
         const newEvent = new Event({
@@ -162,10 +167,11 @@ router.post('/events', authenticateToken, requireAdmin, upload.single('image'), 
         });
         await newEvent.save();
         res.status(201).json(newEvent);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Create event error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: error.message || 'Server error' });
     }
+    return res;
 });
 
 router.delete('/events/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
@@ -179,6 +185,7 @@ router.delete('/events/:id', authenticateToken, requireAdmin, async (req: Reques
         console.error('Delete event error:', error);
         res.status(500).json({ message: 'Server error' });
     }
+    return res;
 });
 
 // Blog Routes
@@ -213,7 +220,7 @@ router.post('/blogs', authenticateToken, requireAdmin, upload.single('image'), [
                     reject(error);
                 }
             });
-            stream.end(req.file.buffer);
+            stream.end(req.file!.buffer);
         });
 
         const newBlog = new Blog({
@@ -223,10 +230,11 @@ router.post('/blogs', authenticateToken, requireAdmin, upload.single('image'), [
         });
         await newBlog.save();
         res.status(201).json(newBlog);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Create blog error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: error.message || 'Server error' });
     }
+    return res;
 });
 
 router.delete('/blogs/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
@@ -240,6 +248,7 @@ router.delete('/blogs/:id', authenticateToken, requireAdmin, async (req: Request
         console.error('Delete blog error:', error);
         res.status(500).json({ message: 'Server error' });
     }
+    return res;
 });
 
 
@@ -272,7 +281,7 @@ router.post('/gallery', authenticateToken, requireAdmin, upload.single('image'),
                     reject(error);
                 }
             });
-            stream.end(req.file.buffer);
+            stream.end(req.file!.buffer);
         });
 
         const newImage = new GalleryImage({
@@ -281,10 +290,11 @@ router.post('/gallery', authenticateToken, requireAdmin, upload.single('image'),
         });
         await newImage.save();
         res.status(201).json(newImage);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Create gallery image error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: error.message || 'Server error' });
     }
+    return res;
 });
 
 router.delete('/gallery/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
@@ -298,6 +308,135 @@ router.delete('/gallery/:id', authenticateToken, requireAdmin, async (req: Reque
         console.error('Delete gallery image error:', error);
         res.status(500).json({ message: 'Server error' });
     }
+    return res;
+});
+
+// Executive Member Routes
+router.get('/executives', async (req: Request, res: Response) => {
+    try {
+        const executives = await Executive.find().sort({ order: 1, createdAt: -1 });
+        res.json(executives);
+    } catch (error) {
+        console.error('Get executives error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.post('/executives', authenticateToken, requireAdmin, upload.single('image'), [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('position').notEmpty().withMessage('Position is required'),
+    body('bio').notEmpty().withMessage('Bio is required'),
+    body('order').isInt({ min: 0 }).withMessage('Order must be a non-negative integer').optional(),
+], async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        let imageUrl = '';
+
+        if (req.file) {
+            const result: any = await new Promise((resolve, reject) => {
+                const stream = cloudinary.v2.uploader.upload_stream({ folder: 'acsp/executives' }, (error, result) => {
+                    if (result) {
+                        resolve(result);
+                    } else {
+                        reject(error);
+                    }
+                });
+                stream.end(req.file!.buffer);
+            });
+
+            imageUrl = result.secure_url;
+        } else if (req.body.imageUrl) {
+            // If no file uploaded but imageUrl provided, use the provided URL
+            imageUrl = req.body.imageUrl;
+        } else {
+            return res.status(400).json({ message: 'Image is required' });
+        }
+
+        const newExecutive = new Executive({
+            name: req.body.name,
+            position: req.body.position,
+            bio: req.body.bio,
+            imageUrl: imageUrl,
+            order: parseInt(req.body.order) || 0,
+            isActive: req.body.isActive !== undefined ? req.body.isActive : true
+        });
+
+        await newExecutive.save();
+        res.status(201).json(newExecutive);
+    } catch (error: any) {
+        console.error('Create executive error:', error);
+        res.status(500).json({ message: error.message || 'Server error' });
+    }
+    return res;
+});
+
+router.put('/executives/:id', authenticateToken, requireAdmin, upload.single('image'), [
+    body('name').notEmpty().withMessage('Name is required'),
+    body('position').notEmpty().withMessage('Position is required'),
+    body('bio').notEmpty().withMessage('Bio is required'),
+    body('order').isInt({ min: 0 }).withMessage('Order must be a non-negative integer').optional(),
+], async (req: Request, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const executive = await Executive.findById(req.params.id);
+        if (!executive) {
+            return res.status(404).json({ message: 'Executive not found' });
+        }
+
+        // Update fields
+        executive.name = req.body.name;
+        executive.position = req.body.position;
+        executive.bio = req.body.bio;
+        executive.order = parseInt(req.body.order) || 0;
+        executive.isActive = req.body.isActive !== undefined ? req.body.isActive : executive.isActive;
+
+        // Handle image upload if provided
+        if (req.file) {
+            const result: any = await new Promise((resolve, reject) => {
+                const stream = cloudinary.v2.uploader.upload_stream({ folder: 'acsp/executives' }, (error, result) => {
+                    if (result) {
+                        resolve(result);
+                    } else {
+                        reject(error);
+                    }
+                });
+                stream.end(req.file!.buffer);
+            });
+
+            // Delete old image from Cloudinary if needed
+            // For now, we'll just update the URL
+            executive.imageUrl = result.secure_url;
+        }
+
+        await executive.save();
+        res.json(executive);
+    } catch (error: any) {
+        console.error('Update executive error:', error);
+        res.status(500).json({ message: error.message || 'Server error' });
+    }
+    return res;
+});
+
+router.delete('/executives/:id', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+    try {
+        const deletedExecutive = await Executive.findByIdAndDelete(req.params.id);
+        if (!deletedExecutive) {
+            return res.status(404).json({ message: 'Executive not found' });
+        }
+        res.json({ message: 'Executive deleted successfully' });
+    } catch (error) {
+        console.error('Delete executive error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+    return res;
 });
 
 export default router;

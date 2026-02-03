@@ -40,6 +40,7 @@ router.post('/', authenticateToken, requireAdmin, [
         console.error('Create forum error:', error);
         res.status(500).json({ message: 'Server error' });
     }
+    return res;
 });
 
 // Delete a forum
@@ -56,6 +57,7 @@ router.delete('/:id', authenticateToken, requireAdmin, async (req: Request, res:
     } catch (error) {
         res.status(500).json({ message: 'Server error' });
     }
+    return res;
 });
 
 // Get threads in a category
@@ -163,6 +165,7 @@ router.post('/:forumId/threads', authenticateToken, requireVerifiedMember, [
         console.error('Create thread error:', error);
         res.status(500).json({ message: 'Server error' });
     }
+    return res;
 });
 
 // Create a reply to a thread
@@ -194,6 +197,7 @@ router.post('/threads/:threadId/reply', authenticateToken, requireVerifiedMember
         console.error('Create reply error:', error);
         res.status(500).json({ message: 'Server error' });
     }
+    return res;
 });
 
 // Like a post

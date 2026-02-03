@@ -1,5 +1,6 @@
 import React from 'react';
 import PageHeader from '../components/PageHeader';
+import ExecutiveMembers from '../components/ExecutiveMembers';
 import { CheckCircle, Users, Target, History } from 'lucide-react';
 
 const About = () => {
@@ -89,6 +90,10 @@ const About = () => {
           </div>
         </div>
       </section>
+
+      {/* Executive Members Section */}
+      <ExecutiveMembers />
+
     </div>
   );
 };

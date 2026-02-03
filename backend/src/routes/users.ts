@@ -51,11 +51,12 @@ router.get('/profile', authenticateToken, async (req: Request, res: Response) =>
     console.error('Get profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+  return res;
 });
 
 // Update user profile (for completing registration)
 router.put('/profile', authenticateToken, [
-  body('phone').optional().isMobilePhone().withMessage('Please enter a valid phone number'),
+  body('phone').optional().isMobilePhone('any').withMessage('Please enter a valid phone number'),
   body('institution').optional().trim().isLength({ min: 2 }).withMessage('Institution must be at least 2 characters'),
   body('specialization').optional().trim().isLength({ min: 2 }).withMessage('Specialization must be at least 2 characters'),
   body('bio').optional().trim().isLength({ max: 500 }).withMessage('Bio must be less than 500 characters'),
@@ -78,17 +79,17 @@ router.put('/profile', authenticateToken, [
     }
 
     // Update profile fields
-    if (phone) user.profile.phone = phone;
-    if (institution) user.profile.institution = institution;
-    if (specialization) user.profile.specialization = specialization;
-    if (bio) user.profile.bio = bio;
+    if (phone) user.profile = { ...user.profile, phone };
+    if (institution) user.profile = { ...user.profile, institution };
+    if (specialization) user.profile = { ...user.profile, specialization };
+    if (bio) user.profile = { ...user.profile, bio };
     if (name) user.name = name;
     if (email) user.email = email;
 
     // Update status to 'pending verification' if profile is complete
     if (user.status === 'unverified_profile' &&
-        user.profile.photo &&
-        user.profile.idCard) {
+        user.profile?.photo &&
+        user.profile?.idCard) {
       user.status = 'pending_verification';
     }
 
@@ -99,6 +100,7 @@ router.put('/profile', authenticateToken, [
     console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+  return res;
 });
 
 // Update user profile with file uploads
@@ -119,17 +121,17 @@ router.put('/profile/upload', authenticateToken, upload.fields([
     if (req.files) {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       if (files['photo']) {
-        user.profile.photo = `/uploads/${files['photo'][0].filename}`;
+        user.profile = { ...user.profile, photo: `/uploads/${files['photo'][0].filename}` };
       }
       if (files['idCard']) {
-        user.profile.idCard = `/uploads/${files['idCard'][0].filename}`;
+        user.profile = { ...user.profile, idCard: `/uploads/${files['idCard'][0].filename}` };
       }
     }
 
     // Update status to 'pending verification' if profile is complete
     if (user.status === 'unverified_profile' &&
-        user.profile.photo &&
-        user.profile.idCard) {
+        user.profile?.photo &&
+        user.profile?.idCard) {
       user.status = 'pending_verification';
     }
 
@@ -140,6 +142,7 @@ router.put('/profile/upload', authenticateToken, upload.fields([
     console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+  return res;
 });
 
 // Admin: Get all users
@@ -185,6 +188,7 @@ router.get('/:id', authenticateToken, requireAdmin, async (req: Request, res: Re
     console.error('Get user error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+  return res;
 });
 
 // Admin: Verify or reject user
@@ -213,6 +217,7 @@ router.patch('/:id/verify', authenticateToken, requireAdmin, async (req: Request
     console.error('Verify user error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+  return res;
 });
 
 // Admin: Update user role
@@ -238,6 +243,7 @@ router.patch('/:id/role', authenticateToken, requireAdmin, [
     console.error('Update role error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+  return res;
 });
 
 // Change password
@@ -279,6 +285,7 @@ router.post('/change-password', authenticateToken, [
     console.error('Change password error:', error);
     res.status(500).json({ message: 'Server error' });
   }
+  return res;
 });
 
 export default router;

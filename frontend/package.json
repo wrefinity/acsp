@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@headlessui/react": "^1.7.18",
+    "axios": "^1.13.2",
     "cannon-es": "^0.20.0",
     "clsx": "^2.1.0",
     "date-fns": "^4.1.0",

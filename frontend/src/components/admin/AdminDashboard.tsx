@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { userAPI } from '../../services/api';
 import { useApi } from '../../hooks/useApi';
 import LoadingSpinner from '../common/LoadingSpinner';
-import { Users, FileText, Settings, Shield, Search, Filter, Eye, Check, X, LogOut, Image, MessageSquare, Megaphone, Newspaper, Calendar } from 'lucide-react';
+import { Users, FileText, Settings, Shield, Search, Filter, Eye, Check, X, LogOut, Image, MessageSquare, Megaphone, Newspaper, Calendar, User } from 'lucide-react';
 import Button from '../common/Button';
 import { GalleryManagement } from './GalleryManagement';
 import { ForumManagement } from './ForumManagement';
@@ -11,6 +11,7 @@ import { AnnouncementManagement } from './AnnouncementManagement';
 import { BlogManagement } from './BlogManagement';
 import { CarouselManagement } from './CarouselManagement';
 import { EventManagement } from './EventManagement';
+import { ExecutiveManagement } from './ExecutiveManagement';
 
 const AdminDashboard = () => {
   const { state, logout } = useAuth();
@@ -99,6 +100,7 @@ const AdminDashboard = () => {
             <nav className="space-y-2">
               {[
                 { id: 'users', label: 'User Management', icon: Users },
+                { id: 'executives', label: 'Executive Members', icon: User },
                 { id: 'gallery', label: 'Gallery Management', icon: Image },
                 { id: 'forums', label: 'Forum Management', icon: MessageSquare },
                 { id: 'announcements', label: 'Announcements', icon: Megaphone },
@@ -256,6 +258,7 @@ const AdminDashboard = () => {
             {activeTab === 'blogs' && <BlogManagement />}
             {activeTab === 'carousel' && <CarouselManagement />}
             {activeTab === 'events' && <EventManagement />}
+            {activeTab === 'executives' && <ExecutiveManagement />}
 
             {activeTab === 'settings' && (
               <div>
