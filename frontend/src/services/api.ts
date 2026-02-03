@@ -102,24 +102,7 @@ export const userAPI = {
   },
 
   // Update user profile with files
-  updateProfile: async (profileData: any) => {
-    const formData = new FormData();
-
-    // Add text fields
-    Object.keys(profileData).forEach(key => {
-      if (key !== 'photo' && key !== 'idCard') {
-        formData.append(key, profileData[key]);
-      }
-    });
-
-    // Add files if they exist
-    if (profileData.photo) {
-      formData.append('photo', profileData.photo);
-    }
-    if (profileData.idCard) {
-      formData.append('idCard', profileData.idCard);
-    }
-
+  updateProfile: async (formData: FormData) => {
     const response = await fetch(`${API_BASE_URL}/users/profile/upload`, {
       method: 'PUT',
       headers: {

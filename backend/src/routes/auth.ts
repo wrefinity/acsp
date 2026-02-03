@@ -94,35 +94,63 @@ router.post('/register', [
       // Still return success even if email fails, but log the error
     }
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'User registered successfully. Please check your email for verification.',
       userId: user._id
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error during registration' });
+    return res.status(500).json({ message: 'Server error during registration' });
   }
-  return res;
 });
 
 // Verify email with token
 router.get('/verify/:token', async (req: Request, res: Response) => {
   try {
-    const { token } = req.params;
+    const { token: verificationToken } = req.params;
 
-    const user = await User.findOne({ verificationToken: token });
+    const user = await User.findOne({ verificationToken: verificationToken });
     if (!user) {
       return res.status(400).json({ message: 'Invalid or expired verification token' });
     }
 
-    // Update user status
+    // Update user status to pending verification after email verification
+    console.log(`Updating user ${user._id} status from ${user.status} to ${UserStatus.PENDING_VERIFICATION}`);
     user.verificationToken = undefined;
     user.isVerified = true;
-    user.status = UserStatus.UNVERIFIED_PROFILE
+    user.status = UserStatus.PENDING_VERIFICATION;
     await user.save();
+    console.log(`User ${user._id} status updated to ${user.status}`);
 
-    res.status(200).json({ message: 'Email verified successfully. Please complete your profile.' });
+    // Generate JWT token for the newly verified user
+    const payload = {
+      user: {
+        id: user._id,
+        role: user.role,
+        status: user.status
+      }
+    };
+
+    const jwtToken = jwt.sign(
+      payload,
+      JWT_SECRET || 'fallback_secret_key',
+      { expiresIn: '1h' }
+    );
+
+    console.log(`JWT token generated for user ${user._id}, status: ${user.status}`);
+
+    res.json({
+      token: jwtToken,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        status: user.status
+      },
+      message: 'Email verified successfully. Please complete your profile.'
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Server error during verification' });
+    return res.status(500).json({ message: 'Server error during verification' });
   }
   return res;
 });
@@ -172,7 +200,7 @@ router.post('/login', [
       { expiresIn: '1h' }
     );
 
-    res.json({
+    return res.json({
       token,
       user: {
         id: user._id,
@@ -183,9 +211,8 @@ router.post('/login', [
       }
     });
   } catch (error) {
-    res.status(500).json({ message: 'Server error during login' });
+    return res.status(500).json({ message: 'Server error during login' });
   }
-  return res;
 });
 
 // Get current user profile
@@ -198,11 +225,10 @@ router.get('/profile', authenticateToken, async (req: AuthRequest, res: Response
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
+    return res.json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
-  return res;
 });
 
 export default router;

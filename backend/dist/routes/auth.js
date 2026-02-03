@@ -44,7 +44,7 @@ const express_validator_1 = require("express-validator");
 const crypto_1 = __importDefault(require("crypto"));
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const auth_1 = require("../middleware/auth");
-const secrets_1 = require("@/secrets");
+const secrets_1 = require("../secrets");
 const router = express_1.default.Router();
 router.post('/register', [
     (0, express_validator_1.body)('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters long'),
@@ -109,31 +109,51 @@ router.post('/register', [
         }
         catch (emailError) {
         }
-        res.status(201).json({
+        return res.status(201).json({
             message: 'User registered successfully. Please check your email for verification.',
             userId: user._id
         });
     }
     catch (error) {
-        res.status(500).json({ message: 'Server error during registration' });
+        return res.status(500).json({ message: 'Server error during registration' });
     }
-    return res;
 });
 router.get('/verify/:token', async (req, res) => {
     try {
-        const { token } = req.params;
-        const user = await User_1.default.findOne({ verificationToken: token });
+        const { token: verificationToken } = req.params;
+        const user = await User_1.default.findOne({ verificationToken: verificationToken });
         if (!user) {
             return res.status(400).json({ message: 'Invalid or expired verification token' });
         }
+        console.log(`Updating user ${user._id} status from ${user.status} to ${User_1.UserStatus.PENDING_VERIFICATION}`);
         user.verificationToken = undefined;
         user.isVerified = true;
-        user.status = User_1.UserStatus.UNVERIFIED_PROFILE;
+        user.status = User_1.UserStatus.PENDING_VERIFICATION;
         await user.save();
-        res.status(200).json({ message: 'Email verified successfully. Please complete your profile.' });
+        console.log(`User ${user._id} status updated to ${user.status}`);
+        const payload = {
+            user: {
+                id: user._id,
+                role: user.role,
+                status: user.status
+            }
+        };
+        const jwtToken = jsonwebtoken_1.default.sign(payload, secrets_1.JWT_SECRET || 'fallback_secret_key', { expiresIn: '1h' });
+        console.log(`JWT token generated for user ${user._id}, status: ${user.status}`);
+        res.json({
+            token: jwtToken,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                status: user.status
+            },
+            message: 'Email verified successfully. Please complete your profile.'
+        });
     }
     catch (error) {
-        res.status(500).json({ message: 'Server error during verification' });
+        return res.status(500).json({ message: 'Server error during verification' });
     }
     return res;
 });
@@ -166,7 +186,7 @@ router.post('/login', [
             }
         };
         const token = jsonwebtoken_1.default.sign(payload, secrets_1.JWT_SECRET || 'fallback_secret_key', { expiresIn: '1h' });
-        res.json({
+        return res.json({
             token,
             user: {
                 id: user._id,
@@ -178,9 +198,8 @@ router.post('/login', [
         });
     }
     catch (error) {
-        res.status(500).json({ message: 'Server error during login' });
+        return res.status(500).json({ message: 'Server error during login' });
     }
-    return res;
 });
 router.get('/profile', auth_1.authenticateToken, async (req, res) => {
     try {
@@ -188,12 +207,11 @@ router.get('/profile', auth_1.authenticateToken, async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        res.json(user);
+        return res.json(user);
     }
     catch (error) {
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Server error' });
     }
-    return res;
 });
 exports.default = router;
 //# sourceMappingURL=auth.js.map

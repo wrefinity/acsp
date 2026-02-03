@@ -16,6 +16,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import AdminPage from './pages/admin/AdminPage';
 import EmailVerification from './pages/auth/EmailVerification';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Component to handle the redirect logic
 const HomeRedirect: React.FC = () => {
@@ -70,6 +72,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/verify/:token" element={<EmailVerification />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Routes>
       </Router>
     </AuthProvider>

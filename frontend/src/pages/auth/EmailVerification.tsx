@@ -17,10 +17,15 @@ const EmailVerification = () => {
         if (!token) {
           throw new Error('Verification token is missing');
         }
-        
+
         const result = await verifyEmail(token);
         setStatus('success');
         setMessage(result.message || 'Email verified successfully. Please complete your profile.');
+
+        // Auto-redirect to login after a short delay to allow user to see success message
+        setTimeout(() => {
+          navigate('/login');
+        }, 2000); // Redirect after 2 seconds
       } catch (error) {
         setStatus('error');
         setMessage(error instanceof Error ? error.message : 'Verification failed');
@@ -28,7 +33,9 @@ const EmailVerification = () => {
     };
 
     verify();
-  }, [token, verifyEmail]);
+    // Remove verifyEmail from the dependency array to prevent infinite loop
+    // The verifyEmail function should be memoized in the context to prevent this issue
+  }, [token, navigate]);
 
   return (
     <div className="min-h-screen bg-neutral flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -59,12 +66,13 @@ const EmailVerification = () => {
               </div>
               <h3 className="mt-4 text-lg font-medium text-gray-900">Verification Successful!</h3>
               <p className="mt-2 text-gray-600">{message}</p>
+              <p className="mt-2 text-blue-600">Redirecting to login page...</p>
               <div className="mt-6">
                 <button
-                  onClick={() => navigate('/dashboard')}
+                  onClick={() => navigate('/login')}
                   className="w-full flex justify-center bg-primary hover:bg-primary-light text-white px-4 py-2 rounded-md text-sm font-medium"
                 >
-                  Go to Dashboard
+                  Go to Login Now
                 </button>
               </div>
             </div>

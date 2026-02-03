@@ -56,7 +56,8 @@ export const requireVerifiedMember = (req: AuthRequest, res: Response, next: Nex
     return res.status(401).json({ message: 'Access denied. No user authenticated.' });
   }
 
-  if (req.user.status !== 'verified') {
+  // Allow users who have verified their email and are pending profile verification
+  if (req.user.status !== 'verified' && req.user.status !== 'pending_verification') {
     return res.status(403).json({ message: 'Access denied. Account must be verified.' });
   }
 

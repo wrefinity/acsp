@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { User, Upload, X } from 'lucide-react';
 import { userAPI } from '../../services/api';
 import Button from '../common/Button';
+import { useAuth } from '../../context/AuthContext';
 
 interface ProfileFormData {
   photo: File | null;
@@ -14,6 +15,7 @@ interface ProfileFormData {
 }
 
 const ProfileCompletion: React.FC = () => {
+  const { updateUserProfile } = useAuth();
   const [formData, setFormData] = useState<ProfileFormData>({
     photo: null,
     idCard: null,
@@ -101,8 +103,14 @@ const ProfileCompletion: React.FC = () => {
         profileData.append('idCard', formData.idCard);
       }
 
-      await userAPI.updateProfile(profileData);
+      const result = await userAPI.updateProfile(profileData);
       alert('Profile updated successfully!');
+
+      // Update the user state in the context to reflect the new status
+      if (result.user) {
+        updateUserProfile(result.user);
+      }
+
       navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');
