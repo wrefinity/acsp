@@ -44,6 +44,7 @@ const express_validator_1 = require("express-validator");
 const crypto_1 = __importDefault(require("crypto"));
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const auth_1 = require("../middleware/auth");
+const secrets_1 = require("@/secrets");
 const router = express_1.default.Router();
 router.post('/register', [
     (0, express_validator_1.body)('name').trim().isLength({ min: 2 }).withMessage('Name must be at least 2 characters long'),
@@ -77,13 +78,13 @@ router.post('/register', [
             const transporter = nodemailer_1.default.createTransport({
                 service: 'gmail',
                 auth: {
-                    user: process.env.EMAIL_USER,
-                    pass: process.env.EMAIL_PASS
+                    user: secrets_1.EMAIL_USER,
+                    pass: secrets_1.EMAIL_PASS
                 }
             });
-            const verificationLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify/${verificationToken}`;
+            const verificationLink = `${secrets_1.CLIENT_URL || 'http://localhost:5173'}/verify/${verificationToken}`;
             const mailOptions = {
-                from: process.env.EMAIL_USER || 'noreply@acsp.org',
+                from: secrets_1.EMAIL_USER || 'noreply@acsp.org',
                 to: email,
                 subject: 'Verify your email address - ACSP',
                 html: `
@@ -164,7 +165,7 @@ router.post('/login', [
                 status: user.status
             }
         };
-        const token = jsonwebtoken_1.default.sign(payload, process.env.JWT_SECRET || 'fallback_secret_key', { expiresIn: '1h' });
+        const token = jsonwebtoken_1.default.sign(payload, secrets_1.JWT_SECRET || 'fallback_secret_key', { expiresIn: '1h' });
         res.json({
             token,
             user: {

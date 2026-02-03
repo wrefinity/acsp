@@ -6,6 +6,7 @@ import { body, validationResult } from 'express-validator';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { authenticateToken } from '../middleware/auth';
+import { CLIENT_URL, EMAIL_PASS, EMAIL_USER, JWT_SECRET } from '@/secrets';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -58,15 +59,15 @@ router.post('/register', [
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
+          user: EMAIL_USER,
+          pass: EMAIL_PASS
         }
       });
 
-      const verificationLink = `${process.env.CLIENT_URL || 'http://localhost:5173'}/verify/${verificationToken}`;
+      const verificationLink = `${CLIENT_URL || 'http://localhost:5173'}/verify/${verificationToken}`;
 
       const mailOptions = {
-        from: process.env.EMAIL_USER || 'noreply@acsp.org',
+        from: EMAIL_USER || 'noreply@acsp.org',
         to: email,
         subject: 'Verify your email address - ACSP',
         html: `
@@ -167,7 +168,7 @@ router.post('/login', [
 
     const token = jwt.sign(
       payload,
-      process.env.JWT_SECRET || 'fallback_secret_key',
+      JWT_SECRET || 'fallback_secret_key',
       { expiresIn: '1h' }
     );
 

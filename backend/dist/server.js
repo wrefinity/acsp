@@ -9,11 +9,12 @@ const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const path_1 = __importDefault(require("path"));
 const cloudinary_1 = __importDefault(require("cloudinary"));
+const secrets_1 = require("./secrets");
 dotenv_1.default.config();
 cloudinary_1.default.v2.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: secrets_1.CLOUDINARY_CLOUD_NAME,
+    api_key: secrets_1.CLOUDINARY_API_KEY,
+    api_secret: secrets_1.CLOUDINARY_API_SECRET,
 });
 const auth_1 = __importDefault(require("./routes/auth"));
 const users_1 = __importDefault(require("./routes/users"));
