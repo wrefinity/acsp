@@ -6,7 +6,7 @@ import { body, validationResult } from 'express-validator';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { authenticateToken } from '../middleware/auth';
-import { CLIENT_URL, EMAIL_PASS, EMAIL_USER, JWT_SECRET } from '@/secrets';
+import { CLIENT_URL, EMAIL_PASS, EMAIL_USER, JWT_SECRET } from '../secrets';
 
 interface AuthRequest extends Request {
   user?: any;
