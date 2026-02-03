@@ -72,10 +72,8 @@ router.post('/register', [
         `
             };
             await transporter.sendMail(mailOptions);
-            console.log(`Verification email sent to ${email}`);
         }
         catch (emailError) {
-            console.error('Error sending verification email:', emailError);
         }
         res.status(201).json({
             message: 'User registered successfully. Please check your email for verification.',
@@ -83,7 +81,6 @@ router.post('/register', [
         });
     }
     catch (error) {
-        console.error('Registration error:', error);
         res.status(500).json({ message: 'Server error during registration' });
     }
     return res;
@@ -102,7 +99,6 @@ router.get('/verify/:token', async (req, res) => {
         res.status(200).json({ message: 'Email verified successfully. Please complete your profile.' });
     }
     catch (error) {
-        console.error('Verification error:', error);
         res.status(500).json({ message: 'Server error during verification' });
     }
     return res;
@@ -148,7 +144,6 @@ router.post('/login', [
         });
     }
     catch (error) {
-        console.error('Login error:', error);
         res.status(500).json({ message: 'Server error during login' });
     }
     return res;
@@ -162,7 +157,6 @@ router.get('/profile', auth_1.authenticateToken, async (req, res) => {
         res.json(user);
     }
     catch (error) {
-        console.error('Profile error:', error);
         res.status(500).json({ message: 'Server error' });
     }
     return res;

@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
+import User, { UserRole, UserStatus } from '../models/User';
 import { body, validationResult } from 'express-validator';
 import crypto from 'crypto';
 import nodemailer from 'nodemailer';
@@ -42,8 +42,8 @@ router.post('/register', [
       name,
       email,
       password: hashedPassword,
-      role: 'member', // Default role
-      status: 'pending' // Awaiting profile completion
+      role: UserRole.MEMBER,
+      status: UserStatus.PENDING
     });
 
     await user.save();
@@ -116,7 +116,7 @@ router.get('/verify/:token', async (req: Request, res: Response) => {
     // Update user status
     user.verificationToken = undefined;
     user.isVerified = true;
-    user.status = 'unverified_profile'; // Needs to complete profile
+    user.status = UserStatus.UNVERIFIED_PROFILE
     await user.save();
 
     res.status(200).json({ message: 'Email verified successfully. Please complete your profile.' });
