@@ -300,6 +300,69 @@ router.patch('/:id/verify', authenticateToken, requireAdmin, async (req: Request
   }
 });
 
+// Admin: Ban or unban user
+router.patch('/:id/ban', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { action, reason } = req.body;
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (action === 'ban') {
+      user.status = UserStatus.BANNED;
+      user.rejectionReason = reason || 'Banned by admin';
+    } else if (action === 'unban') {
+      // When unbanning, set to appropriate status based on profile completion
+      if (user.profile && user.profile.photo && user.profile.idCard) {
+        user.status = UserStatus.VERIFIED;
+      } else if (user.profile) {
+        user.status = UserStatus.PENDING_VERIFICATION;
+      } else {
+        user.status = UserStatus.PENDING;
+      }
+      user.rejectionReason = undefined; // Clear ban reason when unbanning
+    } else {
+      return res.status(400).json({ message: 'Invalid action. Use "ban" or "unban"' });
+    }
+
+    await user.save();
+
+    return res.json({ message: `User ${action}ned successfully`, user });
+  } catch (error) {
+    console.error('Ban user error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin: Get user details with full profile (including sensitive info)
+router.get('/:id/details', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Return full user details including profile with photos and ID
+    return res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      isVerified: user.isVerified,
+      profile: user.profile,
+      rejectionReason: user.rejectionReason,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    });
+  } catch (error) {
+    console.error('Get user details error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Admin: Update user role
 router.patch('/:id/role', authenticateToken, requireAdmin, [
   body('role').isIn(['admin', 'member']).withMessage('Invalid role')

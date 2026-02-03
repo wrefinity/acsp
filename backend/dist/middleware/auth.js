@@ -18,6 +18,9 @@ const authenticateToken = async (req, res, next) => {
         if (!user) {
             return res.status(401).json({ message: 'Token is not valid.' });
         }
+        if (user.status === 'banned') {
+            return res.status(401).json({ message: 'Account has been banned. Access denied.' });
+        }
         req.user = user;
         next();
     }
@@ -42,6 +45,9 @@ exports.requireAdmin = requireAdmin;
 const requireVerifiedMember = (req, res, next) => {
     if (!req.user) {
         return res.status(401).json({ message: 'Access denied. No user authenticated.' });
+    }
+    if (req.user.status === 'banned') {
+        return res.status(403).json({ message: 'Access denied. Account has been banned.' });
     }
     if (req.user.status !== 'verified' && req.user.status !== 'pending_verification') {
         return res.status(403).json({ message: 'Access denied. Account must be verified.' });

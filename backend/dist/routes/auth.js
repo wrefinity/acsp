@@ -175,6 +175,9 @@ router.post('/login', [
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
+        if (user.status === 'banned') {
+            return res.status(400).json({ message: 'Account has been banned. Contact admin for more information.' });
+        }
         if (!user.isVerified) {
             return res.status(400).json({ message: 'Please verify your email before logging in' });
         }
@@ -208,6 +211,92 @@ router.get('/profile', auth_1.authenticateToken, async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
         return res.json(user);
+    }
+    catch (error) {
+        return res.status(500).json({ message: 'Server error' });
+    }
+});
+router.post('/forgot-password', [
+    (0, express_validator_1.body)('email').isEmail().normalizeEmail().withMessage('Please enter a valid email')
+], async (req, res) => {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        const { email } = req.body;
+        const user = await User_1.default.findOne({ email });
+        if (!user) {
+            return res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
+        }
+        const resetToken = crypto_1.default.randomBytes(32).toString('hex');
+        user.passwordResetToken = crypto_1.default.createHash('sha256').update(resetToken).digest('hex');
+        user.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
+        await user.save();
+        try {
+            const transporter = nodemailer_1.default.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: secrets_1.EMAIL_USER,
+                    pass: secrets_1.EMAIL_PASS
+                }
+            });
+            const resetUrl = `${secrets_1.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+            const mailOptions = {
+                from: secrets_1.EMAIL_USER || 'noreply@acsp.org',
+                to: user.email,
+                subject: 'Password Reset Request - ACSP',
+                html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #0A1A4A;">Password Reset Request</h2>
+            <p>Hello ${user.name},</p>
+            <p>You are receiving this email because you (or someone else) have requested the reset of the password for your account.</p>
+            <p>Please click the button below to reset your password:</p>
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${resetUrl}" style="background-color: #1DB954; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">Reset Password</a>
+            </div>
+            <p>If the button doesn't work, copy and paste this link into your browser:</p>
+            <p style="word-break: break-all;">${resetUrl}</p>
+            <p>This link will expire in 10 minutes.</p>
+            <p>If you did not request this, please ignore this email and your password will remain unchanged.</p>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+            <p style="font-size: 12px; color: #666;">© 2026 Association of Cybersecurity Practitioners. All rights reserved.</p>
+          </div>
+        `
+            };
+            await transporter.sendMail(mailOptions);
+        }
+        catch (emailError) {
+            console.error('Email sending error:', emailError);
+        }
+        return res.status(200).json({ message: 'If a user with that email exists, a password reset link has been sent.' });
+    }
+    catch (error) {
+        return res.status(500).json({ message: 'Server error' });
+    }
+});
+router.post('/reset-password/:token', [
+    (0, express_validator_1.body)('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters long')
+], async (req, res) => {
+    try {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        const hashedToken = crypto_1.default.createHash('sha256').update(req.params.token).digest('hex');
+        const user = await User_1.default.findOne({
+            passwordResetToken: hashedToken,
+            passwordResetExpires: { $gt: Date.now() }
+        });
+        if (!user) {
+            return res.status(400).json({ message: 'Token is invalid or has expired' });
+        }
+        const salt = await bcryptjs_1.default.genSalt(10);
+        user.password = await bcryptjs_1.default.hash(req.body.password, salt);
+        user.passwordResetToken = undefined;
+        user.passwordResetExpires = undefined;
+        await user.save();
+        return res.status(200).json({ message: 'Password has been reset successfully.' });
     }
     catch (error) {
         return res.status(500).json({ message: 'Server error' });

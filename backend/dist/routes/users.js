@@ -298,6 +298,64 @@ router.patch('/:id/verify', auth_1.authenticateToken, auth_1.requireAdmin, async
         return res.status(500).json({ message: 'Server error' });
     }
 });
+router.patch('/:id/ban', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const { action, reason } = req.body;
+        const user = await User_1.default.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        if (action === 'ban') {
+            user.status = User_1.UserStatus.BANNED;
+            user.rejectionReason = reason || 'Banned by admin';
+        }
+        else if (action === 'unban') {
+            if (user.profile && user.profile.photo && user.profile.idCard) {
+                user.status = User_1.UserStatus.VERIFIED;
+            }
+            else if (user.profile) {
+                user.status = User_1.UserStatus.PENDING_VERIFICATION;
+            }
+            else {
+                user.status = User_1.UserStatus.PENDING;
+            }
+            user.rejectionReason = undefined;
+        }
+        else {
+            return res.status(400).json({ message: 'Invalid action. Use "ban" or "unban"' });
+        }
+        await user.save();
+        return res.json({ message: `User ${action}ned successfully`, user });
+    }
+    catch (error) {
+        console.error('Ban user error:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+});
+router.get('/:id/details', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const user = await User_1.default.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        return res.json({
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            status: user.status,
+            isVerified: user.isVerified,
+            profile: user.profile,
+            rejectionReason: user.rejectionReason,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+        });
+    }
+    catch (error) {
+        console.error('Get user details error:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+});
 router.patch('/:id/role', auth_1.authenticateToken, auth_1.requireAdmin, [
     (0, express_validator_1.body)('role').isIn(['admin', 'member']).withMessage('Invalid role')
 ], async (req, res) => {

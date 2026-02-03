@@ -26,6 +26,11 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       return res.status(401).json({ message: 'Token is not valid.' });
     }
 
+    // Check if user is banned
+    if (user.status === 'banned') {
+      return res.status(401).json({ message: 'Account has been banned. Access denied.' });
+    }
+
     // Attach user to request
     req.user = user;
     next();
@@ -54,6 +59,11 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
 export const requireVerifiedMember = (req: AuthRequest, res: Response, next: NextFunction) => {
   if (!req.user) {
     return res.status(401).json({ message: 'Access denied. No user authenticated.' });
+  }
+
+  // Deny access if user is banned
+  if (req.user.status === 'banned') {
+    return res.status(403).json({ message: 'Access denied. Account has been banned.' });
   }
 
   // Allow users who have verified their email and are pending profile verification

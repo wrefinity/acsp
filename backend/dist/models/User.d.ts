@@ -12,7 +12,8 @@ export declare enum UserStatus {
     VERIFIED = "verified",
     REJECTED = "rejected",
     SUSPENDED = "suspended",
-    DEACTIVATED = "deactivated"
+    DEACTIVATED = "deactivated",
+    BANNED = "banned"
 }
 export interface IUser extends Document {
     name: string;
@@ -23,6 +24,8 @@ export interface IUser extends Document {
     isVerified: boolean;
     verificationToken?: string;
     rejectionReason?: string;
+    passwordResetToken?: string;
+    passwordResetExpires?: Date;
     profile?: {
         photo?: string;
         idCard?: string;
