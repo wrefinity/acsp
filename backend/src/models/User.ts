@@ -19,7 +19,8 @@ export enum UserStatus {
   VERIFIED = 'verified',
   REJECTED = 'rejected',
   SUSPENDED = 'suspended',
-  DEACTIVATED = 'deactivated'
+  DEACTIVATED = 'deactivated',
+  BANNED = 'banned'
 }
 
 export interface IUser extends Document {
@@ -31,6 +32,8 @@ export interface IUser extends Document {
   isVerified: boolean;
   verificationToken?: string;
   rejectionReason?: string;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
   profile?: {
     photo?: string;
     idCard?: string;
@@ -70,7 +73,7 @@ const UserSchema: Schema = new Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'unverified_profile', 'pending_verification', 'verified', 'rejected'],
+    enum: ['pending', 'unverified_profile', 'pending_verification', 'verified', 'rejected', 'suspended', 'deactivated', 'banned'],
     default: 'pending'
   },
   isVerified: {
@@ -83,6 +86,8 @@ const UserSchema: Schema = new Schema({
   rejectionReason: {
     type: String
   },
+  passwordResetToken: String,
+  passwordResetExpires: Date,
   profile: {
     photo: String,
     idCard: String,

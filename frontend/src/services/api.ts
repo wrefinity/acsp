@@ -82,6 +82,73 @@ export const authAPI = {
 
     return response.json();
   },
+
+  // Forgot password
+  forgotPassword: async (email: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to send password reset email');
+    }
+
+    return response.json();
+  },
+
+  // Reset password
+  resetPassword: async (token: string, password: string) => {
+    const response = await fetch(`${API_BASE_URL}/auth/reset-password/${token}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ password }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to reset password');
+    }
+
+    return response.json();
+  },
+
+  // Admin: Ban/unban user
+  banUser: async (userId: string, action: 'ban' | 'unban', reason?: string) => {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/ban`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ action, reason }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to ban/unban user');
+    }
+
+    return response.json();
+  },
+
+  // Admin: Get user details with full profile
+  getUserDetails: async (userId: string) => {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/details`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get user details');
+    }
+
+    return response.json();
+  },
 };
 
 // User API calls
@@ -102,24 +169,7 @@ export const userAPI = {
   },
 
   // Update user profile with files
-  updateProfile: async (profileData: any) => {
-    const formData = new FormData();
-
-    // Add text fields
-    Object.keys(profileData).forEach(key => {
-      if (key !== 'photo' && key !== 'idCard') {
-        formData.append(key, profileData[key]);
-      }
-    });
-
-    // Add files if they exist
-    if (profileData.photo) {
-      formData.append('photo', profileData.photo);
-    }
-    if (profileData.idCard) {
-      formData.append('idCard', profileData.idCard);
-    }
-
+  updateProfile: async (formData: FormData) => {
     const response = await fetch(`${API_BASE_URL}/users/profile/upload`, {
       method: 'PUT',
       headers: {
@@ -212,6 +262,37 @@ export const userAPI = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to verify user');
+    }
+
+    return response.json();
+  },
+
+  // Admin: Ban/unban user
+  banUser: async (userId: string, action: 'ban' | 'unban', reason?: string) => {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/ban`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ action, reason }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to ban/unban user');
+    }
+
+    return response.json();
+  },
+
+  // Admin: Get user details with full profile
+  getUserDetails: async (userId: string) => {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/details`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get user details');
     }
 
     return response.json();
@@ -323,6 +404,37 @@ export const forumAPI = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.message || 'Failed to create reply');
+    }
+
+    return response.json();
+  },
+
+  // Admin: Ban/unban user
+  banUser: async (userId: string, action: 'ban' | 'unban', reason?: string) => {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/ban`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ action, reason }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to ban/unban user');
+    }
+
+    return response.json();
+  },
+
+  // Admin: Get user details with full profile
+  getUserDetails: async (userId: string) => {
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/details`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to get user details');
     }
 
     return response.json();

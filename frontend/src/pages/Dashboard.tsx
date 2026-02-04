@@ -70,9 +70,8 @@ const Dashboard = () => {
   }, [state.isAuthenticated]);
 
   // Check if user needs to complete profile
-  const needsProfileCompletion = state.user?.status === 'unverified_profile' ||
-                                (state.user?.status === 'pending_verification' &&
-                                (!state.user?.profile?.photo || !state.user?.profile?.idCard));
+  const needsProfileCompletion = state.user?.status === 'pending_verification' &&
+                                (!state.user?.profile?.photo || !state.user?.profile?.idCard);
 
   // Check if user is an admin
   const isAdmin = state.user?.role === 'admin';

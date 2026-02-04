@@ -46,12 +46,11 @@ router.get('/profile', authenticateToken, async (req: Request, res: Response) =>
       return res.status(404).json({ message: 'User not found' });
     }
     
-    res.json(user);
+    return res.json(user);
   } catch (error) {
     console.error('Get profile error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
-  return res;
 });
 
 // Update user profile (for completing registration)
@@ -86,21 +85,31 @@ router.put('/profile', authenticateToken, [
     if (name) user.name = name;
     if (email) user.email = email;
 
-    // Update status to 'pending verification' if profile is complete
-    if (user.status === 'unverified_profile' &&
-        user.profile?.photo &&
-        user.profile?.idCard) {
-      user.status = UserStatus.PENDING_VERIFICATION;
+    // Update status to 'verified' if profile is complete
+    console.log('Checking conditions for status update in non-file route...');
+    console.log('- Current status:', user.status);
+    console.log('- user.profile exists:', !!user.profile);
+    console.log('- user.profile.photo exists:', !!user.profile?.photo);
+    console.log('- user.profile.idCard exists:', !!user.profile?.idCard);
+
+    if (user.status === UserStatus.PENDING_VERIFICATION &&
+        user.profile &&
+        user.profile.photo &&
+        user.profile.idCard) {
+      user.status = UserStatus.VERIFIED;
+      console.log('Status updated to VERIFIED in non-file route');
+    } else {
+      console.log('Status NOT updated in non-file route - conditions not met');
     }
 
     await user.save();
+    console.log('User saved to database with status:', user.status);
 
-    res.json({ message: 'Profile updated successfully', user });
+    return res.json({ message: 'Profile updated successfully', user });
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
-  return res;
 });
 
 // Update user profile with file uploads
@@ -117,32 +126,105 @@ router.put('/profile/upload', authenticateToken, upload.fields([
       return res.status(404).json({ message: 'User not found' });
     }
 
+    console.log('=== PROFILE UPDATE DEBUG INFO ===');
+    console.log('Request body keys:', Object.keys(req.body || {}));
+    console.log('Request body content:', req.body);
+    console.log('Request files:', req.files);
+    console.log('User ID from token:', userId);
+    console.log('Current user before update:', {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      status: user.status,
+      profile: user.profile
+    });
+
+    // Handle text fields from FormData
+    const { phone, institution, specialization, bio, name, email } = req.body;
+
+    console.log('Extracted profile data:', { phone, institution, specialization, bio, name, email });
+    console.log('Current user profile before update:', user.profile);
+
+    if (phone) {
+      user.profile = { ...user.profile, phone };
+      console.log('Updated phone:', phone);
+    }
+    if (institution) {
+      user.profile = { ...user.profile, institution };
+      console.log('Updated institution:', institution);
+    }
+    if (specialization) {
+      user.profile = { ...user.profile, specialization };
+      console.log('Updated specialization:', specialization);
+    }
+    if (bio) {
+      user.profile = { ...user.profile, bio };
+      console.log('Updated bio:', bio);
+    }
+    if (name) {
+      user.name = name;
+      console.log('Updated name:', name);
+    }
+    if (email) {
+      user.email = email;
+      console.log('Updated email:', email);
+    }
+
     // Handle file uploads
     if (req.files) {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      console.log('Processing uploaded files:', Object.keys(files));
       if (files['photo']) {
         user.profile = { ...user.profile, photo: `/uploads/${files['photo'][0].filename}` };
+        console.log('Updated photo path:', `/uploads/${files['photo'][0].filename}`);
       }
       if (files['idCard']) {
         user.profile = { ...user.profile, idCard: `/uploads/${files['idCard'][0].filename}` };
+        console.log('Updated ID card path:', `/uploads/${files['idCard'][0].filename}`);
       }
+    } else {
+      console.log('No files received in the request');
     }
 
-    // Update status to 'pending verification' if profile is complete
-    if (user.status === 'unverified_profile' &&
-        user.profile?.photo &&
-        user.profile?.idCard) {
-      user.status = UserStatus.PENDING_VERIFICATION;;
+    console.log('Profile after updates:', user.profile);
+    console.log('Current status:', user.status);
+    console.log('Checking conditions for status update...');
+    console.log('- user.status === UserStatus.PENDING_VERIFICATION:', user.status === UserStatus.PENDING_VERIFICATION);
+    console.log('- user.profile exists:', !!user.profile);
+    console.log('- user.profile.photo exists:', !!user.profile?.photo);
+    console.log('- user.profile.idCard exists:', !!user.profile?.idCard);
+
+    console.log('Final profile state before status check:', user.profile);
+    console.log('Current status before status check:', user.status);
+
+    // Update status to 'verified' if profile is complete
+    const shouldUpdateStatus = user.status === UserStatus.PENDING_VERIFICATION &&
+                              user.profile &&
+                              user.profile.photo &&
+                              user.profile.idCard;
+
+    console.log('Status update conditions:');
+    console.log('- user.status === UserStatus.PENDING_VERIFICATION:', user.status === UserStatus.PENDING_VERIFICATION);
+    console.log('- user.profile exists:', !!user.profile);
+    console.log('- user.profile.photo exists:', !!user.profile?.photo);
+    console.log('- user.profile.idCard exists:', !!user.profile?.idCard);
+    console.log('- Should update status?', shouldUpdateStatus);
+
+    if (shouldUpdateStatus) {
+      user.status = UserStatus.VERIFIED;
+      console.log('Status updated to VERIFIED');
+    } else {
+      console.log('Status NOT updated - conditions not met');
     }
 
     await user.save();
+    console.log('User saved to database with status:', user.status);
 
-    res.json({ message: 'Profile updated successfully', user });
+    return res.json({ message: 'Profile updated successfully', user });
   } catch (error) {
     console.error('Update profile error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
-  return res;
 });
 
 // Admin: Get all users
@@ -183,12 +265,11 @@ router.get('/:id', authenticateToken, requireAdmin, async (req: Request, res: Re
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.json(user);
+    return res.json(user);
   } catch (error) {
     console.error('Get user error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
-  return res;
 });
 
 // Admin: Verify or reject user
@@ -212,12 +293,74 @@ router.patch('/:id/verify', authenticateToken, requireAdmin, async (req: Request
 
     await user.save();
 
-    res.json({ message: `User ${action}ed successfully`, user });
+    return res.json({ message: `User ${action}ed successfully`, user });
   } catch (error) {
     console.error('Verify user error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
-  return res;
+});
+
+// Admin: Ban or unban user
+router.patch('/:id/ban', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const { action, reason } = req.body;
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (action === 'ban') {
+      user.status = UserStatus.BANNED;
+      user.rejectionReason = reason || 'Banned by admin';
+    } else if (action === 'unban') {
+      // When unbanning, set to appropriate status based on profile completion
+      if (user.profile && user.profile.photo && user.profile.idCard) {
+        user.status = UserStatus.VERIFIED;
+      } else if (user.profile) {
+        user.status = UserStatus.PENDING_VERIFICATION;
+      } else {
+        user.status = UserStatus.PENDING;
+      }
+      user.rejectionReason = undefined; // Clear ban reason when unbanning
+    } else {
+      return res.status(400).json({ message: 'Invalid action. Use "ban" or "unban"' });
+    }
+
+    await user.save();
+
+    return res.json({ message: `User ${action}ned successfully`, user });
+  } catch (error) {
+    console.error('Ban user error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin: Get user details with full profile (including sensitive info)
+router.get('/:id/details', authenticateToken, requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Return full user details including profile with photos and ID
+    return res.json({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+      isVerified: user.isVerified,
+      profile: user.profile,
+      rejectionReason: user.rejectionReason,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    });
+  } catch (error) {
+    console.error('Get user details error:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
 });
 
 // Admin: Update user role
@@ -238,12 +381,11 @@ router.patch('/:id/role', authenticateToken, requireAdmin, [
     user.role = req.body.role;
     await user.save();
 
-    res.json({ message: 'User role updated successfully', user });
+    return res.json({ message: 'User role updated successfully', user });
   } catch (error) {
     console.error('Update role error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
-  return res;
 });
 
 // Change password
@@ -280,12 +422,11 @@ router.post('/change-password', authenticateToken, [
     user.password = hashedPassword;
     await user.save();
 
-    res.json({ message: 'Password changed successfully' });
+    return res.json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Change password error:', error);
-    res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ message: 'Server error' });
   }
-  return res;
 });
 
 export default router;
