@@ -8,8 +8,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 export enum UserRole {
   ADMIN = 'admin',
   MEMBER = 'member',
-  MODERATOR = 'moderator', // Optional: add if needed
-  GUEST = 'guest' // Optional: add if needed
+  MODERATOR = 'moderator',
+  GUEST = 'guest' 
 }
 
 export enum UserStatus {

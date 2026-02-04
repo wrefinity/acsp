@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../models/User';
-
+import User, {UserStatus, UserRole} from '../models/User';
+import {JWT_SECRET} from "../secrets"
 interface AuthRequest extends Request {
   user?: any;
 }
@@ -10,14 +10,14 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
   try {
     // Get token from header
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1]; 
 
     if (!token) {
       return res.status(401).json({ message: 'Access denied. No token provided.' });
     }
 
     // Verify token
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret_key');
+    const decoded: any = jwt.verify(token, JWT_SECRET || 'fallback_secret_key');
 
     // Get user from database
     const user = await User.findById(decoded.user.id).select('-password');
@@ -42,7 +42,7 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
     return res.status(401).json({ message: 'Access denied. No user authenticated.' });
   }
 
-  if (req.user.role !== 'admin') {
+  if (req.user.role !== UserRole.ADMIN) {
     return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
   }
 
@@ -56,7 +56,7 @@ export const requireVerifiedMember = (req: AuthRequest, res: Response, next: Nex
     return res.status(401).json({ message: 'Access denied. No user authenticated.' });
   }
 
-  if (req.user.status !== 'verified') {
+  if (req.user.status !== UserStatus.VERIFIED) {
     return res.status(403).json({ message: 'Access denied. Account must be verified.' });
   }
 
