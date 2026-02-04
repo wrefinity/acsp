@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 
 interface User {
   id: string;
@@ -73,6 +73,11 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         isAuthenticated: true,
         loading: false,
       };
+    case 'VERIFICATION_COMPLETE':
+      return {
+        ...state,
+        loading: false,
+      };
     default:
       return state;
   }
@@ -124,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     try {
       dispatch({ type: 'AUTH_START' });
 
@@ -154,9 +159,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch({ type: 'AUTH_ERROR' });
       throw error;
     }
-  };
+  }, []);
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = useCallback(async (name: string, email: string, password: string) => {
     try {
       dispatch({ type: 'AUTH_START' });
 
@@ -181,9 +186,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch({ type: 'AUTH_ERROR' });
       throw error;
     }
-  };
+  }, []);
 
-  const verifyEmail = async (token: string) => {
+  const verifyEmail = useCallback(async (token: string) => {
     try {
       dispatch({ type: 'AUTH_START' });
 
@@ -197,19 +202,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const data = await response.json();
 
-      // Verification doesn't log in user, so we don't set the token
-      dispatch({ type: 'AUTH_ERROR' });
+      // If the response contains a token, store it and update user state
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+
+        dispatch({
+          type: 'AUTH_SUCCESS',
+          payload: data
+        });
+      } else {
+        // If no token is returned, just complete verification
+        dispatch({ type: 'VERIFICATION_COMPLETE' });
+      }
+
       return data;
     } catch (error) {
       dispatch({ type: 'AUTH_ERROR' });
       throw error;
     }
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     dispatch({ type: 'LOGOUT' });
-  };
+  }, []);
+
+  // Function to update user profile in the context
+  const updateUserProfile = useCallback((updatedUser: User) => {
+    dispatch({
+      type: 'SET_USER',
+      payload: updatedUser
+    });
+  }, []);
 
   return (
     <AuthContext.Provider
@@ -219,6 +243,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         register,
         verifyEmail,
+        updateUserProfile,
       }}
     >
       {children}

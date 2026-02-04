@@ -51,6 +51,7 @@ var UserStatus;
     UserStatus["REJECTED"] = "rejected";
     UserStatus["SUSPENDED"] = "suspended";
     UserStatus["DEACTIVATED"] = "deactivated";
+    UserStatus["BANNED"] = "banned";
 })(UserStatus || (exports.UserStatus = UserStatus = {}));
 const UserSchema = new mongoose_1.Schema({
     name: {
@@ -79,7 +80,7 @@ const UserSchema = new mongoose_1.Schema({
     },
     status: {
         type: String,
-        enum: ['pending', 'unverified_profile', 'pending_verification', 'verified', 'rejected'],
+        enum: ['pending', 'unverified_profile', 'pending_verification', 'verified', 'rejected', 'suspended', 'deactivated', 'banned'],
         default: 'pending'
     },
     isVerified: {
@@ -92,6 +93,8 @@ const UserSchema = new mongoose_1.Schema({
     rejectionReason: {
         type: String
     },
+    passwordResetToken: String,
+    passwordResetExpires: Date,
     profile: {
         photo: String,
         idCard: String,

@@ -26,6 +26,11 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
       return res.status(401).json({ message: 'Token is not valid.' });
     }
 
+    // Check if user is banned
+    if (user.status === 'banned') {
+      return res.status(401).json({ message: 'Account has been banned. Access denied.' });
+    }
+
     // Attach user to request
     req.user = user;
     next();

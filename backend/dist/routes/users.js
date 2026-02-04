@@ -73,13 +73,12 @@ router.get('/profile', auth_1.authenticateToken, async (req, res) => {
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        res.json(user);
+        return res.json(user);
     }
     catch (error) {
         console.error('Get profile error:', error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Server error' });
     }
-    return res;
 });
 router.put('/profile', auth_1.authenticateToken, [
     (0, express_validator_1.body)('phone').optional().isMobilePhone('any').withMessage('Please enter a valid phone number'),
@@ -112,19 +111,29 @@ router.put('/profile', auth_1.authenticateToken, [
             user.name = name;
         if (email)
             user.email = email;
-        if (user.status === 'unverified_profile' &&
-            user.profile?.photo &&
-            user.profile?.idCard) {
-            user.status = User_1.UserStatus.PENDING_VERIFICATION;
+        console.log('Checking conditions for status update in non-file route...');
+        console.log('- Current status:', user.status);
+        console.log('- user.profile exists:', !!user.profile);
+        console.log('- user.profile.photo exists:', !!user.profile?.photo);
+        console.log('- user.profile.idCard exists:', !!user.profile?.idCard);
+        if (user.status === User_1.UserStatus.PENDING_VERIFICATION &&
+            user.profile &&
+            user.profile.photo &&
+            user.profile.idCard) {
+            user.status = User_1.UserStatus.VERIFIED;
+            console.log('Status updated to VERIFIED in non-file route');
+        }
+        else {
+            console.log('Status NOT updated in non-file route - conditions not met');
         }
         await user.save();
-        res.json({ message: 'Profile updated successfully', user });
+        console.log('User saved to database with status:', user.status);
+        return res.json({ message: 'Profile updated successfully', user });
     }
     catch (error) {
         console.error('Update profile error:', error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Server error' });
     }
-    return res;
 });
 router.put('/profile/upload', auth_1.authenticateToken, upload.fields([
     { name: 'photo', maxCount: 1 },
@@ -136,29 +145,94 @@ router.put('/profile/upload', auth_1.authenticateToken, upload.fields([
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
+        console.log('=== PROFILE UPDATE DEBUG INFO ===');
+        console.log('Request body keys:', Object.keys(req.body || {}));
+        console.log('Request body content:', req.body);
+        console.log('Request files:', req.files);
+        console.log('User ID from token:', userId);
+        console.log('Current user before update:', {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            status: user.status,
+            profile: user.profile
+        });
+        const { phone, institution, specialization, bio, name, email } = req.body;
+        console.log('Extracted profile data:', { phone, institution, specialization, bio, name, email });
+        console.log('Current user profile before update:', user.profile);
+        if (phone) {
+            user.profile = { ...user.profile, phone };
+            console.log('Updated phone:', phone);
+        }
+        if (institution) {
+            user.profile = { ...user.profile, institution };
+            console.log('Updated institution:', institution);
+        }
+        if (specialization) {
+            user.profile = { ...user.profile, specialization };
+            console.log('Updated specialization:', specialization);
+        }
+        if (bio) {
+            user.profile = { ...user.profile, bio };
+            console.log('Updated bio:', bio);
+        }
+        if (name) {
+            user.name = name;
+            console.log('Updated name:', name);
+        }
+        if (email) {
+            user.email = email;
+            console.log('Updated email:', email);
+        }
         if (req.files) {
             const files = req.files;
+            console.log('Processing uploaded files:', Object.keys(files));
             if (files['photo']) {
                 user.profile = { ...user.profile, photo: `/uploads/${files['photo'][0].filename}` };
+                console.log('Updated photo path:', `/uploads/${files['photo'][0].filename}`);
             }
             if (files['idCard']) {
                 user.profile = { ...user.profile, idCard: `/uploads/${files['idCard'][0].filename}` };
+                console.log('Updated ID card path:', `/uploads/${files['idCard'][0].filename}`);
             }
         }
-        if (user.status === 'unverified_profile' &&
-            user.profile?.photo &&
-            user.profile?.idCard) {
-            user.status = User_1.UserStatus.PENDING_VERIFICATION;
-            ;
+        else {
+            console.log('No files received in the request');
+        }
+        console.log('Profile after updates:', user.profile);
+        console.log('Current status:', user.status);
+        console.log('Checking conditions for status update...');
+        console.log('- user.status === UserStatus.PENDING_VERIFICATION:', user.status === User_1.UserStatus.PENDING_VERIFICATION);
+        console.log('- user.profile exists:', !!user.profile);
+        console.log('- user.profile.photo exists:', !!user.profile?.photo);
+        console.log('- user.profile.idCard exists:', !!user.profile?.idCard);
+        console.log('Final profile state before status check:', user.profile);
+        console.log('Current status before status check:', user.status);
+        const shouldUpdateStatus = user.status === User_1.UserStatus.PENDING_VERIFICATION &&
+            user.profile &&
+            user.profile.photo &&
+            user.profile.idCard;
+        console.log('Status update conditions:');
+        console.log('- user.status === UserStatus.PENDING_VERIFICATION:', user.status === User_1.UserStatus.PENDING_VERIFICATION);
+        console.log('- user.profile exists:', !!user.profile);
+        console.log('- user.profile.photo exists:', !!user.profile?.photo);
+        console.log('- user.profile.idCard exists:', !!user.profile?.idCard);
+        console.log('- Should update status?', shouldUpdateStatus);
+        if (shouldUpdateStatus) {
+            user.status = User_1.UserStatus.VERIFIED;
+            console.log('Status updated to VERIFIED');
+        }
+        else {
+            console.log('Status NOT updated - conditions not met');
         }
         await user.save();
-        res.json({ message: 'Profile updated successfully', user });
+        console.log('User saved to database with status:', user.status);
+        return res.json({ message: 'Profile updated successfully', user });
     }
     catch (error) {
         console.error('Update profile error:', error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Server error' });
     }
-    return res;
 });
 router.get('/', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
     try {
@@ -192,13 +266,12 @@ router.get('/:id', auth_1.authenticateToken, auth_1.requireAdmin, async (req, re
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        res.json(user);
+        return res.json(user);
     }
     catch (error) {
         console.error('Get user error:', error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Server error' });
     }
-    return res;
 });
 router.patch('/:id/verify', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
     try {
@@ -218,13 +291,70 @@ router.patch('/:id/verify', auth_1.authenticateToken, auth_1.requireAdmin, async
             return res.status(400).json({ message: 'Invalid action. Use "approve" or "reject"' });
         }
         await user.save();
-        res.json({ message: `User ${action}ed successfully`, user });
+        return res.json({ message: `User ${action}ed successfully`, user });
     }
     catch (error) {
         console.error('Verify user error:', error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Server error' });
     }
-    return res;
+});
+router.patch('/:id/ban', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const { action, reason } = req.body;
+        const user = await User_1.default.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        if (action === 'ban') {
+            user.status = User_1.UserStatus.BANNED;
+            user.rejectionReason = reason || 'Banned by admin';
+        }
+        else if (action === 'unban') {
+            if (user.profile && user.profile.photo && user.profile.idCard) {
+                user.status = User_1.UserStatus.VERIFIED;
+            }
+            else if (user.profile) {
+                user.status = User_1.UserStatus.PENDING_VERIFICATION;
+            }
+            else {
+                user.status = User_1.UserStatus.PENDING;
+            }
+            user.rejectionReason = undefined;
+        }
+        else {
+            return res.status(400).json({ message: 'Invalid action. Use "ban" or "unban"' });
+        }
+        await user.save();
+        return res.json({ message: `User ${action}ned successfully`, user });
+    }
+    catch (error) {
+        console.error('Ban user error:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
+});
+router.get('/:id/details', auth_1.authenticateToken, auth_1.requireAdmin, async (req, res) => {
+    try {
+        const user = await User_1.default.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        return res.json({
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            status: user.status,
+            isVerified: user.isVerified,
+            profile: user.profile,
+            rejectionReason: user.rejectionReason,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
+        });
+    }
+    catch (error) {
+        console.error('Get user details error:', error);
+        return res.status(500).json({ message: 'Server error' });
+    }
 });
 router.patch('/:id/role', auth_1.authenticateToken, auth_1.requireAdmin, [
     (0, express_validator_1.body)('role').isIn(['admin', 'member']).withMessage('Invalid role')
@@ -240,13 +370,12 @@ router.patch('/:id/role', auth_1.authenticateToken, auth_1.requireAdmin, [
         }
         user.role = req.body.role;
         await user.save();
-        res.json({ message: 'User role updated successfully', user });
+        return res.json({ message: 'User role updated successfully', user });
     }
     catch (error) {
         console.error('Update role error:', error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Server error' });
     }
-    return res;
 });
 router.post('/change-password', auth_1.authenticateToken, [
     (0, express_validator_1.body)('currentPassword').exists().withMessage('Current password is required'),
@@ -271,13 +400,12 @@ router.post('/change-password', auth_1.authenticateToken, [
         const hashedPassword = await bcryptjs_1.default.hash(newPassword, salt);
         user.password = hashedPassword;
         await user.save();
-        res.json({ message: 'Password changed successfully' });
+        return res.json({ message: 'Password changed successfully' });
     }
     catch (error) {
         console.error('Change password error:', error);
-        res.status(500).json({ message: 'Server error' });
+        return res.status(500).json({ message: 'Server error' });
     }
-    return res;
 });
 exports.default = router;
 //# sourceMappingURL=users.js.map
