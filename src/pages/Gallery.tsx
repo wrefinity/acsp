@@ -45,7 +45,7 @@ const Gallery = () => {
             {images.map((img: any, idx: any) => (
               <div key={img._id || idx} className="relative group overflow-hidden rounded-lg shadow-md aspect-video cursor-pointer">
                 <img 
-                  src={img.src} 
+                  src={img.url} 
                   alt={img.category} 
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
