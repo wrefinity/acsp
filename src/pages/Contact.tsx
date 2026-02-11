@@ -29,7 +29,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-primary text-lg">Our Location</h4>
-                    <p className="text-gray-600">123 Cyber Avenue, Tech District<br />Digital City, DC 10101</p>
+                    <p className="text-gray-600">University of Uyo,  Nwaniba Road, Uyo<br />Akwa Ibom State, Nigeria</p>
                   </div>
                 </div>
                 
@@ -39,7 +39,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-primary text-lg">Phone Number</h4>
-                    <p className="text-gray-600">+1 (555) 123-4567<br />+1 (555) 987-6543</p>
+                    <p className="text-gray-600">+234 8060325776<br />+234 8035041075 </p>
                   </div>
                 </div>
                 
@@ -49,7 +49,7 @@ const Contact = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-primary text-lg">Email Address</h4>
-                    <p className="text-gray-600">info@acsp.org<br />support@acsp.org</p>
+                    <p className="text-gray-600">info@acsp.org<br />acsp2026@gmail.com</p>
                   </div>
                 </div>
               </div>
