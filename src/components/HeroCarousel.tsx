@@ -62,7 +62,7 @@ const HeroCarousel = () => {
           {/* Background Image with Overlay */}
           <div className="absolute inset-0 bg-black/50 z-10"></div>
           <img
-            src={slide.image}
+            src={slide.imageUrl}
             alt={slide.title}
             className="w-full h-full object-cover"
           />
