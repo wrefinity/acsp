@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Shield, Mail, Lock, User, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/common/Button';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -39,6 +41,8 @@ const Register = () => {
   };
 
   return (
+    <>
+    <Header/>
     <div className="min-h-screen bg-neutral flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
@@ -175,6 +179,8 @@ const Register = () => {
         </div>
       </div>
     </div>
+    <Footer/>
+    </>
   );
 };
 
