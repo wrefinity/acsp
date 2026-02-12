@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import Button from '../components/common/Button';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -33,7 +35,7 @@ const ResetPassword = () => {
     try {
       const response = await authAPI.resetPassword(token, password);
       setMessage(response.message);
-      setTimeout(() => navigate('/login'), 3000); // Redirect to login after 3 seconds
+      setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reset password');
     } finally {
@@ -42,6 +44,8 @@ const ResetPassword = () => {
   };
 
   return (
+    <>
+    <Header/>
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
         <h2 className="text-2xl font-bold text-center text-primary">Reset Password</h2>
@@ -99,6 +103,8 @@ const ResetPassword = () => {
         </form>
       </div>
     </div>
+    <Footer/>
+    </>
   );
 };
 

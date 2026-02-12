@@ -34,10 +34,10 @@ const HeroCarousel = () => {
     );
   }
 
-  if (error) {
+  if (error as unknown) {
     return (
       <div className="flex justify-center items-center h-[600px] bg-primary text-white text-xl">
-        Error loading carousel: {error.message}
+        Error loading carousel: {error?.message}
       </div>
     );
   }
