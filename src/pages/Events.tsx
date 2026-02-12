@@ -92,7 +92,7 @@ const Events = () => {
               {filteredEvents.map((event) => (
                 <div key={event._id} className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
                   <div className="relative h-48">
-                    <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />
+                    <img src={event?.imageUrl} alt={event.title} className="w-full h-full object-cover" />
                     <div className="absolute top-4 right-4 bg-secondary text-primary text-xs font-bold px-3 py-1 rounded-full uppercase">
                       {event.type}
                     </div>

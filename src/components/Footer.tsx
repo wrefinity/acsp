@@ -54,11 +54,11 @@ const Footer = () => {
             <ul className="space-y-3 text-sm text-gray-300">
               <li className="flex items-start space-x-3">
                 <MapPin size={18} className="text-secondary mt-0.5" />
-                <span>123 Cyber Avenue, Tech District, Digital City</span>
+                <span>University of Uyo,  Nwaniba Road, Uyo, Akwa Ibom State, Nigeria</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone size={18} className="text-secondary" />
-                <span>+1 (555) 123-4567</span>
+                <span>+234 8060325776</span>
               </li>
               <li className="flex items-center space-x-3">
                 <Mail size={18} className="text-secondary" />
