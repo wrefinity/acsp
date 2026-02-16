@@ -18,7 +18,7 @@ const About = () => {
             <div>
               <h2 className="text-3xl font-bold text-primary mb-6">Who We Are</h2>
               <p className="text-gray-600 mb-4 leading-relaxed">
-                The Association of Cybersecurity Practitioners (ACSP) is a non-profit professional organization dedicated to the advancement of the cybersecurity profession. Established in 2020, we serve as a hub for security professionals, researchers, and policymakers to collaborate, share knowledge, and drive innovation.
+                The Association of Cybersecurity Practitioners (ACSP) is a non-profit professional organization dedicated to the advancement of the cybersecurity profession. Founded in 2025, by a group of visionary security experts, ACSP has grown from a small working group to a national organization.
               </p>
               <p className="text-gray-600 mb-6 leading-relaxed">
                 Our members represent a diverse community of experts from government, industry, and academia, all united by a common goal: to secure the digital world.
