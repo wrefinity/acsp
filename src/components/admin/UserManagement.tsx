@@ -4,6 +4,7 @@ import { User, Eye, Ban, RotateCcw, CheckCircle, XCircle } from 'lucide-react';
 
 interface User {
   id: string;
+  _id: string;
   name: string;
   email: string;
   role: string;
@@ -53,7 +54,7 @@ const UserManagement: React.FC = () => {
   const handleViewDetails = async (user: User) => {
     try {
       // Get full user details including sensitive info
-      const userDetails = await userAPI.getUserDetails(user.id);
+      const userDetails = await userAPI.getUserDetails(user?._id);
       setSelectedUser(userDetails);
       setViewMode('detail');
     } catch (error) {
