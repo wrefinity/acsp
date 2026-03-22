@@ -158,7 +158,9 @@ const AdminDashboard = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-xs font-semibold truncate">{state.user?.name}</p>
-            <p className="text-white/40 text-[10px]">Administrator</p>
+            <p className="text-[10px] font-semibold capitalize" style={{ color: state.user?.role === 'super_admin' ? '#1DB954' : 'rgba(255,255,255,0.4)' }}>
+              {state.user?.role === 'super_admin' ? 'Super Admin' : 'Administrator'}
+            </p>
           </div>
           <button
             onClick={logout}

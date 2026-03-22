@@ -12,6 +12,12 @@ export const userService = {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data),
 
+  // Alias used by Dashboard/ProfileCompletion for file uploads
+  updateProfile: (formData: FormData) =>
+    api.put('/users/profile/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then(r => r.data),
+
   updatePreferences: (prefs: {
     emailAnnouncements: boolean;
     emailEvents: boolean;
@@ -34,4 +40,11 @@ export const userService = {
 
   getUserDetails: (userId: string) =>
     api.get(`/users/${userId}/details`).then(r => r.data),
+
+  // Super admin
+  assignRole: (userId: string, role: 'super_admin' | 'admin' | 'member') =>
+    api.patch(`/users/${userId}/role`, { role }).then(r => r.data),
+
+  deleteUser: (userId: string) =>
+    api.delete(`/users/${userId}`).then(r => r.data),
 };

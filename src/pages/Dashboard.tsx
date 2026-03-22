@@ -81,9 +81,9 @@ const Dashboard = () => {
   const [prefsSaving, setPrefsSaving] = useState(false);
   const [prefsMsg, setPrefsMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Redirect admin
+  // Redirect admin / super_admin
   useEffect(() => {
-    if (user?.role === 'admin') { window.location.href = '/admin'; }
+    if (user?.role === 'admin' || user?.role === 'super_admin') { window.location.href = '/admin'; }
   }, [user]);
 
   // Sync form + prefs when user loads/changes
@@ -398,19 +398,69 @@ const Dashboard = () => {
                 ))}
               </div>
 
-              {/* Profile completeness callout */}
-              {completionPct < 100 && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold text-amber-800">Complete your profile</p>
-                    <p className="text-xs text-amber-600 mt-0.5">Fill in your photo, institution, bio and ID card to reach 100%.</p>
+              {/* Registration progress steps */}
+              {(() => {
+                const steps = [
+                  { label: 'Email verified',          done: !!user?.isVerified },
+                  { label: 'Profile photo uploaded',  done: !!user?.profile?.photo },
+                  { label: 'ID card uploaded',        done: !!user?.profile?.idCard },
+                  { label: 'Phone number added',      done: !!user?.profile?.phone },
+                  { label: 'Institution filled in',   done: !!user?.profile?.institution },
+                  { label: 'Specialization added',    done: !!user?.profile?.specialization },
+                  { label: 'Bio written',             done: !!user?.profile?.bio },
+                  { label: 'Account approved by admin', done: user?.status === 'verified' },
+                ];
+                const done = steps.filter(s => s.done).length;
+                const pct  = Math.round((done / steps.length) * 100);
+                return (
+                  <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+                    <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                      <div>
+                        <h3 className="text-sm font-bold text-primary">Registration Progress</h3>
+                        <p className="text-xs text-gray-400 mt-0.5">{done} of {steps.length} steps completed</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-20 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${pct === 100 ? 'bg-emerald-500' : 'bg-secondary'}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className={`text-sm font-bold ${pct === 100 ? 'text-emerald-600' : 'text-secondary'}`}>{pct}%</span>
+                      </div>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {steps.map((step, i) => (
+                        <div key={i} className="flex items-center gap-3 px-5 py-3">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${step.done ? 'bg-emerald-100' : 'bg-gray-100'}`}>
+                            {step.done
+                              ? <Check className="h-3 w-3 text-emerald-600" />
+                              : <span className="w-1.5 h-1.5 bg-gray-300 rounded-full" />
+                            }
+                          </div>
+                          <span className={`text-sm flex-1 ${step.done ? 'text-gray-700' : 'text-gray-400'}`}>{step.label}</span>
+                          {!step.done && (
+                            <button
+                              onClick={() => setActiveTab(step.label.includes('approved') ? 'overview' : 'profile')}
+                              className="text-[10px] font-semibold text-secondary hover:text-secondary/80"
+                            >
+                              {step.label.includes('approved') ? 'Pending' : 'Add'}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {pct < 100 && (
+                      <div className="px-5 py-3 bg-amber-50 border-t border-amber-100 flex items-center justify-between">
+                        <p className="text-xs text-amber-700 font-medium">Complete all steps to get your membership approved.</p>
+                        <button onClick={() => setActiveTab('profile')} className="text-xs font-semibold text-amber-800 flex items-center gap-1 hover:underline">
+                          Update profile <ChevronRight className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <button onClick={() => setActiveTab('profile')} className="text-xs font-semibold text-amber-700 hover:text-amber-900 flex items-center gap-1">
-                    Update <ChevronRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Announcements */}
               <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">

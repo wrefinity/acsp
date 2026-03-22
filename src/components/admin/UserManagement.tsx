@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { userAPI } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import {
   Eye, Ban, RotateCcw, CheckCircle, XCircle, Search, X,
   ChevronLeft, ChevronRight, Shield, Phone, Building,
-  Briefcase, Clock, User as UserIcon,
+  Briefcase, Clock, User as UserIcon, Trash2, UserCog,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -103,6 +104,41 @@ const BanModal = ({ name, onConfirm, onCancel }: { name: string; onConfirm: (rea
             className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl disabled:opacity-40"
           >
             Ban User
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Role picker modal ──────────────────────────────────────────────────────
+const RoleModal = ({ name, currentRole, onConfirm, onCancel }: {
+  name: string;
+  currentRole: string;
+  onConfirm: (role: 'admin' | 'member') => void;
+  onCancel: () => void;
+}) => {
+  const [role, setRole] = useState<'admin' | 'member'>(currentRole === 'admin' ? 'admin' : 'member');
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+        <h3 className="text-sm font-bold text-primary mb-1">Assign Role — {name}</h3>
+        <p className="text-xs text-gray-400 mb-4">Select the role to assign to this user.</p>
+        <div className="space-y-2">
+          {(['admin', 'member'] as const).map(r => (
+            <label key={r} className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${role === r ? 'border-primary bg-primary/5' : 'border-gray-200 hover:bg-gray-50'}`}>
+              <input type="radio" name="role" value={r} checked={role === r} onChange={() => setRole(r)} className="accent-primary" />
+              <div>
+                <p className="text-sm font-semibold text-primary capitalize">{r}</p>
+                <p className="text-xs text-gray-400">{r === 'admin' ? 'Can manage content and users' : 'Standard member access'}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <button onClick={onCancel} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-xl">Cancel</button>
+          <button onClick={() => onConfirm(role)} className="px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary/90 rounded-xl">
+            Assign Role
           </button>
         </div>
       </div>
@@ -267,6 +303,9 @@ const DetailDrawer = ({
 
 // ── Main Component ─────────────────────────────────────────────────────────
 const UserManagement: React.FC = () => {
+  const { state: authState } = useAuth();
+  const isSuperAdmin = authState.user?.role === 'super_admin';
+
   const [users, setUsers] = useState<IUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -279,6 +318,8 @@ const UserManagement: React.FC = () => {
   const [detailUser, setDetailUser] = useState<IUser | null>(null);
   const [rejectTarget, setRejectTarget] = useState<string | null>(null);
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+  const [roleTarget, setRoleTarget] = useState<IUser | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<IUser | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -415,6 +456,36 @@ const UserManagement: React.FC = () => {
       const full = await userAPI.getUserDetails(u._id || u.id);
       setDetailUser(full);
     } catch { setDetailUser(u); }
+  };
+
+  const handleAssignRole = async (role: 'admin' | 'member') => {
+    if (!roleTarget) return;
+    const id = roleTarget._id || roleTarget.id;
+    setRoleTarget(null);
+    setActionLoading(true);
+    try {
+      await userAPI.assignRole(id, role);
+      toast.success(`Role updated to ${role}`);
+      setDetailUser(null);
+      await fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to assign role');
+    } finally { setActionLoading(false); }
+  };
+
+  const handleDeleteUser = async (u: IUser) => {
+    const id = u._id || u.id;
+    setDeleteTarget(null);
+    setActionLoading(true);
+    try {
+      await userAPI.deleteUser(id);
+      toast.success(`${u.name} deleted`);
+      setDetailUser(null);
+      setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+      await fetchUsers();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete user');
+    } finally { setActionLoading(false); }
   };
 
   // ── Render ─────────────────────────────────────────────────────────────
@@ -613,6 +684,27 @@ const UserManagement: React.FC = () => {
                               <Ban className="h-3.5 w-3.5" />
                             </button>
                           )}
+                          {/* Super admin actions */}
+                          {isSuperAdmin && (
+                            <>
+                              <button
+                                onClick={() => setRoleTarget(u)}
+                                disabled={actionLoading}
+                                title="Assign role"
+                                className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-600 transition-colors disabled:opacity-40"
+                              >
+                                <UserCog className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteTarget(u)}
+                                disabled={actionLoading}
+                                title="Delete user"
+                                className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-colors disabled:opacity-40"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          )}
                           {/* View details */}
                           <button
                             onClick={() => handleViewDetail(u)}
@@ -693,6 +785,35 @@ const UserManagement: React.FC = () => {
           onUnban={handleUnban}
           actionLoading={actionLoading}
         />
+      )}
+
+      {/* Role assignment modal */}
+      {roleTarget && (
+        <RoleModal
+          name={roleTarget.name}
+          currentRole={roleTarget.role}
+          onCancel={() => setRoleTarget(null)}
+          onConfirm={handleAssignRole}
+        />
+      )}
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-sm font-bold text-primary mb-1">Delete {deleteTarget.name}?</h3>
+            <p className="text-xs text-gray-400 mb-6">This action is permanent and cannot be undone. The user's account and all associated data will be removed.</p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setDeleteTarget(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-200 rounded-xl">Cancel</button>
+              <button
+                onClick={() => handleDeleteUser(deleteTarget)}
+                className="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl"
+              >
+                Delete User
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
