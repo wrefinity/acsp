@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Shield body -->
+  <path d="M16 2L4 7v9c0 6.627 5.149 11.348 12 13 6.851-1.652 12-6.373 12-13V7L16 2z" fill="#0A1A4A"/>
+  <!-- Shield highlight / inner shape -->
+  <path d="M16 5L7 9.5V16c0 4.97 3.86 8.51 9 9.9 5.14-1.39 9-4.93 9-9.9V9.5L16 5z" fill="#0D47A1"/>
+  <!-- Checkmark / lock icon in green -->
+  <path d="M12 16l3 3 5-5" stroke="#1DB954" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

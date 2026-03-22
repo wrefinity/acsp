@@ -3,13 +3,13 @@ import { executiveService, ExecutiveMember } from '../../services/executiveServi
 import LoadingSpinner from '../common/LoadingSpinner';
 import Button from '../common/Button';
 import { Plus, Edit, Trash2, Upload, Users } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface ExecutiveManagementProps {}
 
 export const ExecutiveManagement: React.FC<ExecutiveManagementProps> = () => {
   const [executives, setExecutives] = useState<ExecutiveMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingExecutive, setEditingExecutive] = useState<ExecutiveMember | null>(null);
   const [formData, setFormData] = useState({
@@ -31,9 +31,8 @@ export const ExecutiveManagement: React.FC<ExecutiveManagementProps> = () => {
       setLoading(true);
       const data = await executiveService.getExecutives();
       setExecutives(data.sort((a, b) => a.order - b.order));
-    } catch (err) {
-      setError('Failed to load executive members');
-      console.error(err);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to load executive members');
     } finally {
       setLoading(false);
     }
@@ -96,9 +95,11 @@ export const ExecutiveManagement: React.FC<ExecutiveManagementProps> = () => {
       resetForm();
       fetchExecutives();
       setIsModalOpen(false);
-    } catch (err) {
-      console.error('Error saving executive:', err);
-      setFormErrors({ submit: 'Failed to save executive member' });
+      toast.success(editingExecutive ? 'Executive updated.' : 'Executive member added.');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.response?.data?.errors?.[0]?.msg || err?.message || 'Failed to save executive member';
+      setFormErrors({ submit: msg });
+      toast.error(msg);
     }
   };
 
@@ -132,10 +133,10 @@ export const ExecutiveManagement: React.FC<ExecutiveManagementProps> = () => {
     if (window.confirm('Are you sure you want to delete this executive member?')) {
       try {
         await executiveService.deleteExecutive(id);
+        toast.success('Executive member deleted.');
         fetchExecutives();
-      } catch (err) {
-        console.error('Error deleting executive:', err);
-        alert('Failed to delete executive member');
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to delete executive member');
       }
     }
   };
@@ -153,19 +154,10 @@ export const ExecutiveManagement: React.FC<ExecutiveManagementProps> = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-red-500">{error}</p>
-        <Button onClick={fetchExecutives} className="mt-4">Retry</Button>
-      </div>
-    );
-  }
-
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-primary">Executive Members Management</h2>
+        <h2 className="text-sm font-bold text-primary">Executive Members Management</h2>
         <Button onClick={openAddModal}>
           <Plus className="h-4 w-4 mr-2" />
           Add Executive
@@ -251,7 +243,7 @@ export const ExecutiveManagement: React.FC<ExecutiveManagementProps> = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <h3 className="text-lg font-bold text-primary mb-4">
+              <h3 className="text-sm font-bold text-primary mb-3">
                 {editingExecutive ? 'Edit Executive Member' : 'Add New Executive Member'}
               </h3>
 

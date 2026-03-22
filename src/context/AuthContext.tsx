@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import { authService } from '../services/authService';
 
 interface User {
   id: string;
@@ -6,6 +7,22 @@ interface User {
   email: string;
   role: string;
   status: string;
+  isVerified?: boolean;
+  createdAt?: string;
+  profile?: {
+    photo?: string;
+    idCard?: string;
+    phone?: string;
+    institution?: string;
+    specialization?: string;
+    bio?: string;
+  };
+  preferences?: {
+    emailAnnouncements?: boolean;
+    emailEvents?: boolean;
+    emailForum?: boolean;
+    profileVisible?: boolean;
+  };
 }
 
 interface AuthState {
@@ -26,6 +43,7 @@ interface AuthContextType {
   logout: () => void;
   register: (name: string, email: string, password: string) => Promise<void>;
   verifyEmail: (token: string) => Promise<void>;
+  updateUserProfile: (updatedUser: User) => void;
 }
 
 const initialState: AuthState = {
@@ -40,10 +58,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
     case 'AUTH_START':
-      return {
-        ...state,
-        loading: true,
-      };
+      return { ...state, loading: true };
     case 'AUTH_SUCCESS':
       return {
         ...state,
@@ -53,31 +68,13 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         loading: false,
       };
     case 'AUTH_ERROR':
-      return {
-        ...state,
-        loading: false,
-        isAuthenticated: false,
-      };
+      return { ...state, loading: false, isAuthenticated: false };
     case 'LOGOUT':
-      return {
-        ...state,
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        loading: false,
-      };
+      return { ...state, user: null, token: null, isAuthenticated: false, loading: false };
     case 'SET_USER':
-      return {
-        ...state,
-        user: action.payload,
-        isAuthenticated: true,
-        loading: false,
-      };
+      return { ...state, user: action.payload, isAuthenticated: true, loading: false };
     case 'VERIFICATION_COMPLETE':
-      return {
-        ...state,
-        loading: false,
-      };
+      return { ...state, loading: false };
     default:
       return state;
   }
@@ -86,75 +83,34 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
-  // Check for token on initial load
+  // Verify stored token on initial load
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
-      // In a real app, you would verify the token and get user data
-      // For now, we'll just set isAuthenticated to true
-      // In a real implementation, you'd call an API to verify the token and get user data
-      const verifyToken = async () => {
-        try {
-          // Verify token with backend
-          const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/profile`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (response.ok) {
-            const userData = await response.json();
-            dispatch({
-              type: 'AUTH_SUCCESS',
-              payload: {
-                token,
-                user: userData
-              }
-            });
-          } else {
-            // Token is invalid, remove it
-            localStorage.removeItem('token');
-            dispatch({ type: 'AUTH_ERROR' });
-          }
-        } catch (error) {
-          console.error('Error verifying token:', error);
-          localStorage.removeItem('token');
-          dispatch({ type: 'AUTH_ERROR' });
-        }
-      };
-
-      verifyToken();
-    } else {
+    if (!token) {
       dispatch({ type: 'AUTH_ERROR' });
+      return;
     }
+    authService.getProfile()
+      .then(userData => {
+        const user = { ...userData, id: userData.id || userData._id };
+        dispatch({ type: 'AUTH_SUCCESS', payload: { token, user } });
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        dispatch({ type: 'AUTH_ERROR' });
+      });
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
+    dispatch({ type: 'AUTH_START' });
     try {
-      dispatch({ type: 'AUTH_START' });
-
-      // In a real app, this would be an API call to your backend
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-
-      const data = await response.json();
-
+      const data = await authService.login({ email, password });
       localStorage.setItem('token', data.token);
-
-      dispatch({
-        type: 'AUTH_SUCCESS',
-        payload: data
-      });
-
-      return data; // Return the response data for navigation
+      localStorage.setItem('refreshToken', data.refreshToken);
+      const user = { ...data.user, id: data.user.id || data.user._id };
+      dispatch({ type: 'AUTH_SUCCESS', payload: { token: data.token, user } });
+      return data;
     } catch (error) {
       dispatch({ type: 'AUTH_ERROR' });
       throw error;
@@ -162,24 +118,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const register = useCallback(async (name: string, email: string, password: string) => {
+    dispatch({ type: 'AUTH_START' });
     try {
-      dispatch({ type: 'AUTH_START' });
-
-      // Call the actual API
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
-      }
-
-      const data = await response.json();
-
-      // Registration doesn't log in user, so we don't set the token
+      const data = await authService.register({ name, email, password });
       dispatch({ type: 'AUTH_ERROR' });
       return data;
     } catch (error) {
@@ -189,32 +130,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const verifyEmail = useCallback(async (token: string) => {
+    dispatch({ type: 'AUTH_START' });
     try {
-      dispatch({ type: 'AUTH_START' });
-
-      // Call the actual API
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api'}/auth/verify/${token}`);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Email verification failed');
-      }
-
-      const data = await response.json();
-
-      // If the response contains a token, store it and update user state
+      const data = await authService.verifyRegistrationOtp('', token); // token param is unused here
       if (data.token) {
         localStorage.setItem('token', data.token);
-
-        dispatch({
-          type: 'AUTH_SUCCESS',
-          payload: data
-        });
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+        dispatch({ type: 'AUTH_SUCCESS', payload: data });
       } else {
-        // If no token is returned, just complete verification
         dispatch({ type: 'VERIFICATION_COMPLETE' });
       }
-
       return data;
     } catch (error) {
       dispatch({ type: 'AUTH_ERROR' });
@@ -222,30 +147,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    authService.logout().catch(() => null);
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     dispatch({ type: 'LOGOUT' });
   }, []);
 
-  // Function to update user profile in the context
   const updateUserProfile = useCallback((updatedUser: User) => {
-    dispatch({
-      type: 'SET_USER',
-      payload: updatedUser
-    });
+    dispatch({ type: 'SET_USER', payload: updatedUser });
   }, []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        state,
-        login,
-        logout,
-        register,
-        verifyEmail,
-        updateUserProfile,
-      }}
-    >
+    <AuthContext.Provider value={{ state, login, logout, register, verifyEmail, updateUserProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -253,8 +167,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import MainLayout from './layouts/MainLayout';
@@ -17,7 +18,10 @@ import Dashboard from './pages/Dashboard';
 import AdminPage from './pages/admin/AdminPage';
 import EmailVerification from './pages/auth/EmailVerification';
 import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
+import Newsletter from './pages/Newsletter';
+import BlogDetail from './pages/BlogDetail';
+import Announcements from './pages/Announcements';
+import AnnouncementDetail from './pages/AnnouncementDetail';
 
 // Component to handle the redirect logic
 const HomeRedirect: React.FC = () => {
@@ -33,6 +37,7 @@ const HomeRedirect: React.FC = () => {
 function App() {
   return (
     <AuthProvider>
+      <Toaster richColors position="top-right" closeButton />
       <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <Routes>
           <Route path="/" element={<MainLayout />}>
@@ -44,6 +49,10 @@ function App() {
             <Route path="services" element={<Services />} />
             <Route path="gallery" element={<Gallery />} />
             <Route path="contact" element={<Contact />} />
+            <Route path="newsletter" element={<Newsletter />} />
+            <Route path="blogs/:id" element={<BlogDetail />} />
+            <Route path="announcements" element={<Announcements />} />
+            <Route path="announcements/:id" element={<AnnouncementDetail />} />
           </Route>
           <Route
             path="/dashboard"
@@ -62,7 +71,7 @@ function App() {
             }
           />
           <Route
-            path="admin"
+            path="/admin"
             element={
               <ProtectedRoute adminOnly={true}>
                 <AdminPage />
@@ -73,7 +82,6 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route path="/verify/:token" element={<EmailVerification />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
         </Routes>
       </Router>
     </AuthProvider>

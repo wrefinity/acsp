@@ -1,9 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import PageHeader from '../components/PageHeader';
 import ExecutiveMembers from '../components/ExecutiveMembers';
 import { CheckCircle, Users, Target, History, Award, Shield, Globe, BookOpen } from 'lucide-react';
+import { foundingLeaderService, FoundingLeader } from '../services/foundingLeaderService';
 
 const About = () => {
+  const [foundingLeaders, setFoundingLeaders] = useState<FoundingLeader[]>([]);
+
+  useEffect(() => {
+    foundingLeaderService.getFoundingLeaders()
+      .then(setFoundingLeaders)
+      .catch(() => {});
+  }, []);
+
   return (
     <div>
       <PageHeader 
@@ -227,25 +236,43 @@ const About = () => {
             <div className="h-1 w-20 bg-secondary mx-auto"></div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="bg-neutral p-8 rounded-xl shadow-lg text-center">
-              <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
-                <BookOpen size={48} className="text-primary" />
-              </div>
-              <h3 className="text-xl font-bold text-primary mb-2">Professor Emeritus Peter Okebukola</h3>
-              <p className="text-secondary font-semibold mb-4">Founding Leader</p>
-              <p className="text-gray-600 text-sm">Distinguished professor and pioneer in cybersecurity education, leading the transformative VICBHE training program that inspired ACSP's formation.</p>
+          {foundingLeaders.length > 0 ? (
+            <div className={`grid grid-cols-1 gap-8 max-w-4xl mx-auto ${foundingLeaders.length === 1 ? '' : 'md:grid-cols-2'}`}>
+              {foundingLeaders.map((leader) => (
+                <div key={leader._id} className="bg-neutral p-8 rounded-xl shadow-lg text-center">
+                  <div className="w-36 h-36 mx-auto mb-6 rounded-full overflow-hidden border-4 border-secondary shadow-md">
+                    <img
+                      src={leader.imageUrl}
+                      alt={leader.name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h3 className="text-xl font-bold text-primary mb-2">{leader.name}</h3>
+                  <p className="text-secondary font-semibold mb-4">{leader.role}</p>
+                  <p className="text-gray-600 text-sm">{leader.bio}</p>
+                </div>
+              ))}
             </div>
-
-            <div className="bg-neutral p-8 rounded-xl shadow-lg text-center">
-              <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
-                <Shield size={48} className="text-primary" />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              <div className="bg-neutral p-8 rounded-xl shadow-lg text-center">
+                <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <BookOpen size={48} className="text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-primary mb-2">Professor Emeritus Peter Okebukola</h3>
+                <p className="text-secondary font-semibold mb-4">Founding Leader</p>
+                <p className="text-gray-600 text-sm">Distinguished professor and pioneer in cybersecurity education, leading the transformative VICBHE training program that inspired ACSP's formation.</p>
               </div>
-              <h3 className="text-xl font-bold text-primary mb-2">Professor Isaac Odesola</h3>
-              <p className="text-secondary font-semibold mb-4">President</p>
-              <p className="text-gray-600 text-sm">Visionary leader guiding ACSP's mission to elevate professional standards and tackle Africa's unique cybersecurity challenges through collaboration and innovation.</p>
+              <div className="bg-neutral p-8 rounded-xl shadow-lg text-center">
+                <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Shield size={48} className="text-primary" />
+                </div>
+                <h3 className="text-xl font-bold text-primary mb-2">Professor Isaac Odesola</h3>
+                <p className="text-secondary font-semibold mb-4">President</p>
+                <p className="text-gray-600 text-sm">Visionary leader guiding ACSP's mission to elevate professional standards and tackle Africa's unique cybersecurity challenges through collaboration and innovation.</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 

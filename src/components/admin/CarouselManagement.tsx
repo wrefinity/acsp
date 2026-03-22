@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { contentAPI } from '../../services/api';
 import Button from '../common/Button';
-import Input from '../common/Input';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { Plus, Trash2, Layers, X } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CarouselSlide {
   _id: string;
@@ -14,166 +15,152 @@ interface CarouselSlide {
   imageUrl: string;
 }
 
+const INPUT = 'w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary';
+const LABEL = 'block text-xs font-medium text-gray-700 mb-1';
+
 export const CarouselManagement: React.FC = () => {
   const [slides, setSlides] = useState<CarouselSlide[]>([]);
-  const [title, setTitle] = useState('');
-  const [subtitle, setSubtitle] = useState('');
-  const [ctaText, setCtaText] = useState('');
-  const [ctaLink, setCtaLink] = useState('');
-  const [order, setOrder] = useState<number>(0); // Initialize as number
-  const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [form, setForm] = useState({ title: '', subtitle: '', ctaText: '', ctaLink: '', order: '0' });
+  const [file, setFile] = useState<File | null>(null);
 
   const fetchSlides = async () => {
     setLoading(true);
-    try {
-      const data = await contentAPI.getCarouselSlides();
-      setSlides(data);
-    } catch (err: any) {
-      setError(err.message || 'Failed to fetch carousel slides.');
-    } finally {
-      setLoading(false);
-    }
+    try { setSlides(await contentAPI.getCarouselSlides()); }
+    catch (err: any) { toast.error(err.message || 'Failed to fetch slides.'); }
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchSlides();
-  }, []);
+  useEffect(() => { fetchSlides(); }, []);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFile(e.target.files[0]);
-    }
-  };
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+    setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  const validateForm = () => {
-    if (!title || !subtitle || !ctaText || !ctaLink || !file) {
-      setError('All fields are required.');
-      return false;
-    }
-    if (!/^(ftp|http|https):\/\/[^ "]+$/.test(ctaLink)) { // Basic URL validation
-      setError('CTA Link must be a valid URL.');
-      return false;
-    }
-    if (typeof order !== 'number' || order < 0) {
-      setError('Order must be a non-negative number.');
-      return false;
-    }
-    setError('');
-    return true;
-  }
+  const openModal = () => { setForm({ title: '', subtitle: '', ctaText: '', ctaLink: '', order: '0' }); setFile(null); setError(''); setIsModalOpen(true); };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) {
-      return;
-    }
-    setLoading(true);
-    const formData = new FormData();
-    formData.append('title', title);
-    formData.append('subtitle', subtitle);
-    formData.append('ctaText', ctaText);
-    formData.append('ctaLink', ctaLink);
-    formData.append('order', order.toString());
-    formData.append('image', file);
-
+    const { title, subtitle, ctaText, ctaLink } = form;
+    if (!title || !subtitle || !ctaText || !ctaLink || !file) { setError('All fields are required.'); return; }
+    if (!/^https?:\/\/.+/.test(ctaLink)) { setError('CTA Link must be a valid URL.'); return; }
+    setSubmitting(true);
     try {
-      await contentAPI.createCarouselSlide(formData);
-      setTitle('');
-      setSubtitle('');
-      setCtaText('');
-      setCtaLink('');
-      setOrder(0);
-      setFile(null);
-      setError('');
+      const fd = new FormData();
+      fd.append('title', title); fd.append('subtitle', subtitle);
+      fd.append('ctaText', ctaText); fd.append('ctaLink', ctaLink);
+      fd.append('order', form.order); fd.append('image', file);
+      await contentAPI.createCarouselSlide(fd);
+      setIsModalOpen(false);
+      toast.success('Slide created successfully.');
       fetchSlides();
     } catch (err: any) {
-      setError(err.message || 'Failed to create carousel slide.');
-    } finally {
-      setLoading(false);
-    }
+      const msg = err.message || 'Failed to create slide.';
+      setError(msg);
+      toast.error(msg);
+    } finally { setSubmitting(false); }
   };
 
   const handleDelete = async (id: string) => {
-    setLoading(true);
-    try {
-      await contentAPI.deleteCarouselSlide(id);
-      fetchSlides();
-    } catch (err: any) {
-      setError(err.message || 'Failed to delete carousel slide.');
-    } finally {
-      setLoading(false);
-    }
+    if (!window.confirm('Delete this slide?')) return;
+    try { await contentAPI.deleteCarouselSlide(id); toast.success('Slide deleted.'); fetchSlides(); }
+    catch (err: any) { toast.error(err.message || 'Failed to delete slide.'); }
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">Carousel Management</h2>
-      {error && <p className="text-red-500">{error}</p>}
-      
-      <form onSubmit={handleSubmit} className="mb-8 p-4 border rounded-lg">
-        <h3 className="text-xl font-semibold mb-4">Create New Slide</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Input
-            type="text"
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-          <Input
-            type="text"
-            placeholder="Subtitle"
-            value={subtitle}
-            onChange={(e) => setSubtitle(e.target.value)}
-          />
-          <Input
-            type="text"
-            placeholder="CTA Text"
-            value={ctaText}
-            onChange={(e) => setCtaText(e.target.value)}
-          />
-          <Input
-            type="text"
-            placeholder="CTA Link (e.g., https://example.com)"
-            value={ctaLink}
-            onChange={(e) => setCtaLink(e.target.value)}
-          />
-          <Input
-            type="number"
-            placeholder="Order (e.g., 0)"
-            value={order}
-            onChange={(e) => setOrder(parseInt(e.target.value, 10) || 0)} // Ensure number and default to 0
-          />
-        </div>
-        <div className="mt-4">
-          <Input
-            type="file"
-            onChange={handleFileChange}
-          />
-        </div>
-        <Button type="submit" disabled={loading} className="mt-4">
-          {loading ? 'Creating...' : 'Create Slide'}
-        </Button>
-      </form>
-
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Existing Slides</h3>
-        {loading && <LoadingSpinner />}
-        <div className="space-y-4">
-          {slides.map((slide) => (
-            <div key={slide._id} className="border rounded-lg p-4">
-              <img src={slide.imageUrl} alt={slide.title} className="w-full h-48 object-cover rounded-md mb-2" />
-              <h4 className="font-semibold text-lg">{slide.title}</h4>
-              <p className="text-gray-600">{slide.subtitle}</p>
-              <p className="text-sm mt-2">Order: {slide.order}</p>
-              <Button onClick={() => handleDelete(slide._id)} disabled={loading} className="mt-4 bg-red-500 hover:bg-red-600">
-                Delete
-              </Button>
-            </div>
-          ))}
-        </div>
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-sm font-bold text-primary">Carousel Slides</h2>
+        <Button onClick={openModal}><Plus className="h-4 w-4 mr-1.5" /> Add Slide</Button>
       </div>
+
+      {loading ? (
+        <div className="flex justify-center py-10"><LoadingSpinner /></div>
+      ) : slides.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="mx-auto h-12 w-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
+            <Layers className="h-5 w-5 text-gray-400" />
+          </div>
+          <p className="text-sm font-medium text-gray-900">No slides yet</p>
+          <p className="text-xs text-gray-500 mt-1">Add a carousel slide to get started.</p>
+          <div className="mt-4"><Button onClick={openModal}><Plus className="h-4 w-4 mr-1.5" /> Add Slide</Button></div>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                {['Image', 'Title', 'Subtitle', 'Order', 'Actions'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-100">
+              {slides.map(s => (
+                <tr key={s._id}>
+                  <td className="px-4 py-3">
+                    <img src={s.imageUrl} alt={s.title} className="w-14 h-9 object-cover rounded" />
+                  </td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{s.title}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500 max-w-xs truncate">{s.subtitle}</td>
+                  <td className="px-4 py-3 text-xs text-gray-500">{s.order}</td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => handleDelete(s._id)} className="text-red-500 hover:text-red-700" title="Delete">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <h3 className="text-sm font-bold text-primary">New Carousel Slide</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600"><X className="h-4 w-4" /></button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-5 space-y-4">
+              {error && <p className="text-xs text-red-500">{error}</p>}
+              <div>
+                <label className={LABEL}>Title *</label>
+                <input name="title" value={form.title} onChange={handleChange} className={INPUT} placeholder="Slide title" />
+              </div>
+              <div>
+                <label className={LABEL}>Subtitle *</label>
+                <input name="subtitle" value={form.subtitle} onChange={handleChange} className={INPUT} placeholder="Slide subtitle" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className={LABEL}>CTA Text *</label>
+                  <input name="ctaText" value={form.ctaText} onChange={handleChange} className={INPUT} placeholder="Learn More" />
+                </div>
+                <div>
+                  <label className={LABEL}>Order</label>
+                  <input name="order" type="number" min="0" value={form.order} onChange={handleChange} className={INPUT} />
+                </div>
+              </div>
+              <div>
+                <label className={LABEL}>CTA Link *</label>
+                <input name="ctaLink" value={form.ctaLink} onChange={handleChange} className={INPUT} placeholder="https://..." />
+              </div>
+              <div>
+                <label className={LABEL}>Image *</label>
+                <input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] || null)} className={INPUT + ' py-1.5'} />
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={submitting}>{submitting ? 'Saving…' : 'Create'}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
